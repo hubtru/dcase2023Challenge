@@ -1,7 +1,5 @@
 import pandas as pd
 import tensorflow as tf
-import numpy as np
-
 from mfcc_preprocessing import compute_mfccs, save_mfccs
 import json
 import numpy as np
@@ -12,43 +10,66 @@ def load_mfccs_from_json(json_file):
         mfccs_data = json.load(f)
 
     # Convert the MFCC data to a Pandas DataFrame
-    df = pd.DataFrame.from_dict(mfccs_data).T
+    df = np.array(mfccs_data)
     return df
 
 
 def main():
-    audio_dir = r'C:\Users\Henning\Documents\Datasets_AD_Challenge\dev_bearing\bearing\test'
     # Directory containing audio files
-    output_file = 'mfccs_bearing_test.json'  # Output file to save MFCCs
+    audio_dir = [r'C:\Users\Henning\Documents\Datasets_AD_Challenge\dev_bearing\bearing\train',
+                 r'C:\Users\Henning\Documents\Datasets_AD_Challenge\dev_bearing\bearing\test']
 
-    #mfccs_data = compute_mfccs(audio_dir)  # Compute MFCCs
-    #save_mfccs(mfccs_data, output_file)  # Save MFCCs
+    # Output file to save MFCCs
+    output_file = ['mfccs_bearing_train.json', 'mfccs_bearing_test.json']
+
+    '''
+    for i in range(len(audio_dir)):
+        mfccs_data = compute_mfccs(audio_dir[i])  # Compute MFCCs
+        save_mfccs(mfccs_data, output_file[i])  # Save MFCCs
+    '''
 
     # Load the MFCC data from the JSON file
-    bearing_train = load_mfccs_from_json(output_file)
+    bearing_train = load_mfccs_from_json(output_file[0])
     print(bearing_train.shape)
 
-    # Assuming you have a pandas DataFrame called `df` with MFCCs data
-
     # Convert the DataFrame to a numpy array
-    mfccs_data = bearing_train.values
-
+    print("hi")
     # Normalize the data
-    normalized_data = (mfccs_data - np.mean(mfccs_data)) / np.std(mfccs_data)
+    '''mean = np.mean(mfccs_data, axis=0)
+    print("hi")
+    std = np.std(mfccs_data, axis=0)
+    print("hi")
+    normalized_data = (mfccs_data - mean) / std
+    '''
+    # Assuming `mfccs_data` is a 3D array
 
+    mean = np.mean(bearing_train, axis=2)
+    std = np.std(bearing_train, axis=2)
+    normalized_data = (bearing_train - mean[:, :, np.newaxis]) / std[:, :, np.newaxis]
+
+    #normalized_data = (mfccs_data - np.mean(mfccs_data)) / np.std(mfccs_data)
+    print("hi")
     # Define the autoencoder model
     input_dim = mfccs_data.shape[1]
     encoding_dim = 32  # Adjust the encoding dimension as needed
-
+    print("hi")
     input_data = tf.keras.layers.Input(shape=(input_dim,))
     encoded = tf.keras.layers.Dense(encoding_dim, activation='relu')(input_data)
     decoded = tf.keras.layers.Dense(input_dim, activation='sigmoid')(encoded)
 
     autoencoder = tf.keras.Model(inputs=input_data, outputs=decoded)
-
-    # Compile and train the autoencoder
+    print("hi")
+    # Compile the autoencoder
     autoencoder.compile(optimizer='adam', loss='mean_squared_error')
-    autoencoder.fit(normalized_data, normalized_data, epochs=10, batch_size=32)
+    print("hi")
+
+    # Define a custom callback for logging
+    class LoggingCallback(tf.keras.callbacks.Callback):
+        def on_epoch_end(self, epoch, logs=None):
+            print(f"Epoch {epoch + 1}/{self.params['epochs']} - loss: {logs['loss']}")
+
+    # Train the autoencoder with logging
+    autoencoder.fit(normalized_data, normalized_data, epochs=10, batch_size=32, callbacks=[LoggingCallback()])
 
     # Obtain the encoded representation of the input data
     encoded_data = tf.keras.Model(inputs=input_data, outputs=encoded)
@@ -56,9 +77,9 @@ def main():
 
     # Print the encoded representation
     print(encoded_output)
-    print("this and")
 
-    #print(bearing_train[0])
+    # Save the model
+    autoencoder.save('autoencoder_model.h5')
 
 
 if __name__ == '__main__':
