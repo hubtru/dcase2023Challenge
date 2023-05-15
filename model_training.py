@@ -9,19 +9,26 @@ def normalize_mfccs(mfccs_data):
 
     # Perform the normalization
     normalized_data = (mfccs_data - mean) / std
+    normalized_data = normalized_data.reshape(normalized_data.shape[0], -1)
 
     return normalized_data
 
 
-def train_autoencoder(data, encoding_dim, epochs, batch_size):
+def train_autoencoder(data, encoding_dim, epochs, batch_size, dropout_rate=0.0):
     input_data = tf.keras.layers.Input(shape=(data.shape[1],))
 
     encoded = tf.keras.layers.Dense(64, activation='relu')(input_data)
     encoded = tf.keras.layers.Dense(32, activation='relu')(encoded)
     encoded = tf.keras.layers.Dense(encoding_dim, activation='relu')(encoded)
 
+    # Dropout layer
+    if dropout_rate > 0.0:
+        dropout_encoded = tf.keras.layers.Dropout(dropout_rate)(encoded)
+    else:
+        dropout_encoded = encoded
+
     # Decoder
-    decoded = tf.keras.layers.Dense(32, activation='relu')(encoded)
+    decoded = tf.keras.layers.Dense(32, activation='relu')(dropout_encoded)
     decoded = tf.keras.layers.Dense(64, activation='relu')(decoded)
     decoded = tf.keras.layers.Dense(data.shape[1], activation='sigmoid')(decoded)
 
@@ -40,3 +47,4 @@ def train_autoencoder(data, encoding_dim, epochs, batch_size):
         autoencoder.fit(data, data, epochs=1, batch_size=batch_size, verbose=1)
 
     return autoencoder
+

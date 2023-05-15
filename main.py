@@ -22,31 +22,31 @@ def main():
                    'mfccs_bearing_train_augmented.json']
 
     # Load the MFCC data from the JSON file
-    #bearing_train = compute_mfccs(audio_dir[0], True)
-    #save_mfccs(bearing_train, "mfccs_bearing_train_augmented.json")
+    # bearing_train = compute_mfccs(audio_dir[0], True)
+    # save_mfccs(bearing_train, "mfccs_bearing_train_augmented.json")
     bearing_train = load_mfccs_from_json(output_file[0])
+    bearing_test = load_mfccs_from_json(output_file[1])
     print(bearing_train.dtype)
     print(np.shape(bearing_train))
+    # autoencoder = tf.keras.models.load_model('autoencoder_model.h5')
 
     # Normalize the data
-    normalized_data = normalize_mfccs(bearing_train)
-
-    # Reshape the input data to (None, input_dim)
-    input_dim = bearing_train.shape[1] * bearing_train.shape[2]
-    normalized_data = normalized_data.reshape(normalized_data.shape[0], -1)
+    normalized_train_data = normalize_mfccs(bearing_train)
+    normalized_test_data = normalize_mfccs(bearing_test)
 
     # Train the autoencoder
     encoding_dim = 32
-    autoencoder = train_autoencoder(normalized_data, encoding_dim, epochs=10, batch_size=32)
+    autoencoder = train_autoencoder(normalized_train_data, encoding_dim, epochs=10, batch_size=32)
 
     # Obtain the encoded representation of the input data
-    encoded_data = autoencoder.predict(normalized_data)
+    encoded_train_data = autoencoder.predict(normalized_train_data)
+    encoded_test_data = autoencoder.predict(normalized_test_data)
 
     # Visualize the encoded data
-    visualize_encoded_data(encoded_data)
+    visualize_encoded_data(encoded_train_data, encoded_test_data)
 
     # Save the model
-    autoencoder.save('autoencoder_model.h5')
+    # autoencoder.save('autoencoder_model.h5')
 
 
 if __name__ == '__main__':
