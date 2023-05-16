@@ -14,12 +14,13 @@ def normalize_mfccs(mfccs_data):
     return normalized_data
 
 
-def train_autoencoder(data, encoding_dim, epochs, batch_size, dropout_rate=0.0):
+def train_autoencoder(data, encoding_dim, epochs, batch_size, dropout_rate=0.0, l2_reg=0.01):
     input_data = tf.keras.layers.Input(shape=(data.shape[1],))
 
-    encoded = tf.keras.layers.Dense(64, activation='relu')(input_data)
-    encoded = tf.keras.layers.Dense(32, activation='relu')(encoded)
-    encoded = tf.keras.layers.Dense(encoding_dim, activation='relu')(encoded)
+    # Encoder
+    encoded = tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))(input_data)
+    encoded = tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))(encoded)
+    encoded = tf.keras.layers.Dense(encoding_dim, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))(encoded)
 
     # Dropout layer
     if dropout_rate > 0.0:
@@ -28,9 +29,9 @@ def train_autoencoder(data, encoding_dim, epochs, batch_size, dropout_rate=0.0):
         dropout_encoded = encoded
 
     # Decoder
-    decoded = tf.keras.layers.Dense(32, activation='relu')(dropout_encoded)
-    decoded = tf.keras.layers.Dense(64, activation='relu')(decoded)
-    decoded = tf.keras.layers.Dense(data.shape[1], activation='sigmoid')(decoded)
+    decoded = tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))(dropout_encoded)
+    decoded = tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))(decoded)
+    decoded = tf.keras.layers.Dense(data.shape[1], activation='sigmoid', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))(decoded)
 
     # Define the autoencoder model
     autoencoder = tf.keras.Model(inputs=input_data, outputs=decoded)

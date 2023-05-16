@@ -36,7 +36,7 @@ def main():
 
     # Train the autoencoder
     encoding_dim = 32
-    autoencoder = train_autoencoder(normalized_train_data, encoding_dim, epochs=10, batch_size=32)
+    autoencoder = train_autoencoder(normalized_train_data, encoding_dim, epochs=20, batch_size=32)
 
     # Obtain the encoded representation of the input data
     encoded_train_data = autoencoder.predict(normalized_train_data)
