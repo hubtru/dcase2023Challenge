@@ -21,16 +21,20 @@ def main():
 
     # Output file to save MFCCs
     output_file = ['mfccs_bearing_train.json', 'mfccs_bearing_test.json',
-                   'mfccs_bearing_train_augmented.json']
+                   'mfccs_bearing_train_augmented.json', 'mel_bearing_train.json',
+                   'mel_bearing_test.json', 'mel_bearing_train_augmented.json',
+                   'stft_bearing_train.json',
+                   'stft_bearing_test.json', 'stft_bearing_train_augmented.json'
+                   ]
 
     # Load the MFCC data from the JSON file
 
-    #bearing_train = compute_features(audio_dir[0], feature_type='mfcc', augment=True, num_augmentations=5, augmentation_factor=0.02)
+    # bearing_train = compute_features(audio_dir[1], feature_type='stft', augment=False, num_augmentations=5, augmentation_factor=0.02)
 
-    #save_features(bearing_train, "mfccs_bearing_train_augmented.json")
+    # save_features(bearing_train, "stft_bearing_test.json")
 
-    bearing_train = load_features_from_json(output_file[2])
-    bearing_test = load_features_from_json(output_file[1])
+    bearing_train = load_features_from_json(output_file[6])
+    bearing_test = load_features_from_json(output_file[7])
     print(bearing_train.dtype)
     print(np.shape(bearing_train))
     print(bearing_test.dtype)
@@ -43,7 +47,8 @@ def main():
 
     # Train the autoencoder
     encoding_dim = 32
-    autoencoder = train_autoencoder(normalized_train_data, encoding_dim, epochs=10, batch_size=32)
+    autoencoder = train_autoencoder(normalized_train_data, encoding_dim, epochs=10, batch_size=32,
+                                    l2_reg=0.01, dropout_rate=0.0)
 
     # Obtain the encoded representation of the input data
     print(np.shape(normalized_train_data))

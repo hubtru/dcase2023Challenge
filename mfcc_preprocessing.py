@@ -4,7 +4,7 @@ import json
 import numpy as np
 
 
-# feature_type: 'mel' or 'mfcc', decides between mfcc or melspectrogram as features
+# feature_type: 'mel', 'stft' or 'mfcc', decides between mfcc, stft or melspectrogram as features
 # augment: Boolean, decides whether or not Data Augmentation is applied
 # num_augmentation: Number of augmentations per audio file
 # augmentation_factor: Magnitude of random noice added
@@ -29,24 +29,10 @@ def compute_features(audio_dir, feature_type='mfcc', augment=False, num_augmenta
                 # Include the original features in the array
                 original_features = extract_features(audio=audio, sr=sr, feature_type=feature_type)
                 augmented_features.append(original_features.tolist())
-                #print(np.shape(augmented_features))
-                '''
-                augmented_features = np.array(augmented_features)
-                augmented_features = augmented_features.reshape(
-                    augmented_features.shape[0] * augmented_features.shape[1],
-                    augmented_features.shape[2])
-                '''
                 features_data[filename] = augmented_features
             else:
                 # Compute features without augmentation
                 features = extract_features(audio=audio, sr=sr, feature_type=feature_type)
-                '''
-                features = np.array(features)
-                features = features.reshape(
-                    features.shape[0] * features.shape[1],
-                    features.shape[2])
-                '''
-                #print(np.shape(features))
                 features_data[filename] = features
 
     return features_data
@@ -57,6 +43,8 @@ def extract_features(audio, sr, feature_type):
         return librosa.feature.mfcc(y=audio, sr=sr)
     elif feature_type == 'mel':
         return librosa.feature.melspectrogram(y=audio, sr=sr)
+    elif feature_type == 'stft':
+        return librosa.stft(audio)
     else:
         raise ValueError(f"Invalid feature type: {feature_type}. Supported types are 'mfcc' and 'mel'.")
 
@@ -66,6 +54,8 @@ def save_features(features_data, output_file):
     features_data_serializable = {}
     for filename, features in features_data.items():
         if isinstance(features, np.ndarray):
+            if np.iscomplexobj(features):
+                features = np.abs(features)  # Convert complex values to magnitude
             features_data_serializable[filename] = features.tolist()
         else:
             features_data_serializable[filename] = features
