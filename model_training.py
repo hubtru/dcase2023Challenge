@@ -3,16 +3,17 @@ import numpy as np
 
 
 def normalize_mfccs(mfccs_data):
+
+    if mfccs_data.shape[1] == 1:
+        mfccs_data = np.squeeze(mfccs_data, axis=1)
+
     # Calculate the mean and standard deviation along the axis of each feature
     mean = np.mean(mfccs_data, axis=(0, 2), keepdims=True)
     std = np.std(mfccs_data, axis=(0, 2), keepdims=True)
 
     # Perform the normalization
     normalized_data = (mfccs_data - mean) / std
-    # normalized_data = normalized_data.reshape(normalized_data.shape[0], -1)
-    if np.ndim == 4:
-        normalized_data = np.reshape(normalized_data, (normalized_data.shape[0] * normalized_data.shape[1],
-                                                       *normalized_data.shape[2:]))
+
     print(np.shape(normalized_data))
     return normalized_data
 
