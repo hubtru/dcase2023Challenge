@@ -12,7 +12,7 @@
       <sourceFolder url="file://$USER_HOME$/Documents/Datasets_AD_Challenge/dev_valve" isTestSource="false" />
     </content>
     <content url="file://$MODULE_DIR$" />
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="Python 3.10 (dcase2023Challenge)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
