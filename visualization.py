@@ -44,7 +44,7 @@ def visualize_encoded_data(train_data, test_data):
     ax.bar(range(1, num_components + 1), explained_variance_ratio_cumulative[:num_components], align='center')
     ax.set_xlabel('Number of Components')
     ax.set_ylabel('Cumulative Explained Variance Ratio')
-    ax.set_title('Cumulative Explained Variance Ratio by Number of Components (Up to 10)')
+    ax.set_title('Cumulative Explained Variance Ratio by Number of Components')
 
     # Show the plot
     plt.show()
@@ -58,7 +58,7 @@ def visualize_melspectrogram(mel_spectrogram):
     plt.figure(figsize=(6, 6))
     librosa.display.specshow(mel_spectrogram, x_axis='time', y_axis='mel')
     plt.colorbar(format='%+2.0f')
-    plt.title('Mel Spectrogram (No dB Conversion)')
+    plt.title('Mel Spectrogram (dB Conversion)')
 
     # Show the plot
     plt.show()

@@ -22,7 +22,7 @@ def train_autoencoder(data, encoding_dim, epochs, batch_size, dropout_rate=0.0, 
     input_data = tf.keras.layers.Input(shape=(data.shape[1], data.shape[2]))
 
     # Encoder
-    encoded = tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))(input_data)
+    encoded = tf.keras.layers.Dense(313, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))(input_data)
     encoded = tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))(encoded)
     encoded = tf.keras.layers.Dense(encoding_dim, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))(encoded)
 

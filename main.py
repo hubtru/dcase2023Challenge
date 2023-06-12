@@ -30,7 +30,7 @@ def main():
     # compute_all_features(audio_all, feature_type='mel', augment=False, num_augmentations=5, augmentation_factor=0.02,subsets=subsets, datasets=datasets)
 
     # Load the MFCC data from the JSON file
-    data_train, data_test = load_all_features(feature_type="mel", subsets=subsets, datasets=datasets)
+    data_train, data_test = load_all_features(feature_type="mfcc", subsets=subsets, datasets=datasets)
     visualize_melspectrogram(data_train[0])
     print(data_train.dtype)
     print(np.shape(data_train))
@@ -44,7 +44,7 @@ def main():
 
     # Train the autoencoder
     encoding_dim = 32
-    autoencoder = train_autoencoder(normalized_train_data, encoding_dim, epochs=10, batch_size=32,
+    autoencoder = train_autoencoder(normalized_train_data, encoding_dim, epochs=20, batch_size=32,
                                     l2_reg=0.00, dropout_rate=0.4)
 
     # Obtain the encoded representation of the input data
