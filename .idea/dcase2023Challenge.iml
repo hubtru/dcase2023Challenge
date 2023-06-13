@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
-    <content url="file://$USER_HOME$/Documents/Datasets_AD_Challenge">
-      <sourceFolder url="file://$USER_HOME$/Documents/Datasets_AD_Challenge" isTestSource="false" />
-      <sourceFolder url="file://$USER_HOME$/Documents/Datasets_AD_Challenge/dev_ToyCar" isTestSource="false" />
-      <sourceFolder url="file://$USER_HOME$/Documents/Datasets_AD_Challenge/dev_ToyTrain" isTestSource="false" />
-      <sourceFolder url="file://$USER_HOME$/Documents/Datasets_AD_Challenge/dev_bearing" isTestSource="false" />
-      <sourceFolder url="file://$USER_HOME$/Documents/Datasets_AD_Challenge/dev_fan" isTestSource="false" />
-      <sourceFolder url="file://$USER_HOME$/Documents/Datasets_AD_Challenge/dev_gearbox" isTestSource="false" />
-      <sourceFolder url="file://$USER_HOME$/Documents/Datasets_AD_Challenge/dev_slider" isTestSource="false" />
-      <sourceFolder url="file://$USER_HOME$/Documents/Datasets_AD_Challenge/dev_valve" isTestSource="false" />
+    <content url="file://$MODULE_DIR$/../../Datasets_AD_Challenge">
+      <sourceFolder url="file://$MODULE_DIR$/../../Datasets_AD_Challenge" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../Datasets_AD_Challenge/dev_ToyCar" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../Datasets_AD_Challenge/dev_ToyTrain" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../Datasets_AD_Challenge/dev_bearing" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../Datasets_AD_Challenge/dev_fan" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../Datasets_AD_Challenge/dev_gearbox" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../Datasets_AD_Challenge/dev_slider" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../Datasets_AD_Challenge/dev_valve" isTestSource="false" />
     </content>
     <content url="file://$MODULE_DIR$" />
-    <orderEntry type="jdk" jdkName="Python 3.10 (dcase2023Challenge)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.10 (venv)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

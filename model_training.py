@@ -52,5 +52,3 @@ def train_autoencoder(data, encoding_dim, epochs, batch_size, dropout_rate=0.0, 
         autoencoder.fit(data, data, epochs=1, batch_size=batch_size, verbose=1)
 
     return autoencoder
-
-

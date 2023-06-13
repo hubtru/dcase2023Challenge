@@ -17,20 +17,24 @@ def main():
     start_time = time.time()
     # Main-Directory of datasets. Structure needs to be: main_directory\dev_fan\fan\train for the train dataset of the
     # subset fan.
-    audio_all = r'C:\Users\Henning\Documents\Datasets_AD_Challenge'
-
+    audio_all = r'C:\Users\HABELS.COMPUTACENTER\Downloads\dcase_training_data'
+    feature_options = ["mfcc", "mel", "stft"]
     subsets = ['train', 'test']
+    output_size = (128, 313)
+    feature = feature_options[2]
 
     # On the current version the datasets ToyCar and ToyTrain are excluded, because the audio files are longer,
     # thus their np.arrays have a different structure
 
-    # datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve']
-    datasets = ['bearing', 'fan', 'gearbox', 'slider']
+    datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve']
+    # datasets = ['bearing', 'fan', 'gearbox', 'slider']
 
-    # compute_all_features(audio_all, feature_type='mel', augment=False, num_augmentations=5, augmentation_factor=0.02,subsets=subsets, datasets=datasets)
+    compute_all_features(audio_all, feature_type=feature, augment=False, num_augmentations=5,
+                         augmentation_factor=0.02, subsets=subsets, datasets=datasets, output_size=output_size)
 
     # Load the MFCC data from the JSON file
-    data_train, data_test = load_all_features(feature_type="mfcc", subsets=subsets, datasets=datasets)
+    data_train, data_test = load_all_features(feature_type=feature, subsets=subsets,
+                                              datasets=datasets, output_size=output_size)
     visualize_melspectrogram(data_train[0])
     print(data_train.dtype)
     print(np.shape(data_train))
@@ -44,7 +48,7 @@ def main():
 
     # Train the autoencoder
     encoding_dim = 32
-    autoencoder = train_autoencoder(normalized_train_data, encoding_dim, epochs=20, batch_size=32,
+    autoencoder = train_autoencoder(normalized_train_data, encoding_dim, epochs=20, batch_size=16,
                                     l2_reg=0.00, dropout_rate=0.4)
 
     # Obtain the encoded representation of the input data
