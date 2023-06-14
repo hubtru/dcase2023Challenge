@@ -43,22 +43,28 @@ def compute_features(audio_dir, feature_type, augment=False, num_augmentations=5
     return features_data
 
 
-def compute_all_features(audio_dir, subsets, datasets, feature_type='mfcc', augment=False, num_augmentations=5,
+def compute_all_features(audio_dir, feature_type='mfcc', augment=False, num_augmentations=5,
                          augmentation_factor=0.02, output_size=(20, 313)):
     data_folder = "data_features"
     os.makedirs(data_folder, exist_ok=True)
 
-    for subset in subsets:
-        # Get the appropriate subset directories based on the subset parameter
-        subset_dirs = [os.path.join(audio_dir, folder, subset) for folder in os.listdir(audio_dir)]
-        print(subset_dirs)
-        # Iterate over audio directories in the chosen subset
-        for subset_dir, dataset in zip(subset_dirs, datasets):
+    # Iterate over audio directories in the main directory
+    for folder in os.listdir(audio_dir):
+        folder_path = os.path.join(audio_dir, folder)
+        if not os.path.isdir(folder_path):
+            continue
+
+        # Get the subdirectories within each folder
+        subdirs = [subdir for subdir in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, subdir))]
+
+        # Iterate over the subdirectories
+        for subdir in subdirs:
+            subset_dir = os.path.join(folder_path, subdir)
             features = compute_features(audio_dir=subset_dir, feature_type=feature_type, augment=augment,
                                         num_augmentations=num_augmentations, augmentation_factor=augmentation_factor,
                                         output_size=output_size)
             filename = os.path.join(data_folder,
-                                    f"{feature_type}_{dataset}_{subset}_{output_size[0]}_{output_size[1]}.json")
+                                    f"{feature_type}_{folder}_{subdir}_{output_size[0]}_{output_size[1]}.json")
             save_features(features, filename)
 
 
