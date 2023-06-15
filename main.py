@@ -3,14 +3,8 @@ import numpy as np
 import time
 
 from preprocessing import compute_all_features, load_all_features
-from model_training import train_autoencoder, normalize_mfccs
-from visualization import visualize_encoded_data, visualize_melspectrogram
-
-
-# Define a custom callback for logging
-class LoggingCallback(tf.keras.callbacks.Callback):
-    def on_epoch_end(self, epoch, logs=None):
-        print(f"Epoch {epoch + 1}/{self.params['epochs']} - loss: {logs['loss']}")
+from model_training import train_autoencoder, normalize_mfccs, train_autoencoder_conv
+from visualization import visualize_encoded_data, visualize_melspectrogram, visualize_audio_length
 
 
 def main():
@@ -25,15 +19,14 @@ def main():
     feature_options = ["mfcc", "mel", "stft"]
 
     output_size = (128, 313)
-    feature = feature_options[2]
-
+    feature = feature_options[1]
     # compute_all_features(audio_all, feature_type=feature, augment=False, num_augmentations=5,
-                        # augmentation_factor=0.02, output_size=output_size)
+                   #     augmentation_factor=0.02, output_size=output_size)
 
     # Load the features data from the JSON file
     data_train, data_test = load_all_features(feature_type=feature, subsets=subsets,
                                               datasets=datasets, output_size=output_size)
-    # visualize_melspectrogram(data_train[0])
+
     print(data_train.dtype)
     print(np.shape(data_train))
     print(data_test.dtype)
@@ -45,9 +38,9 @@ def main():
     normalized_test_data = normalize_mfccs(data_test)
 
     # Train the autoencoder
-    encoding_dim = 32
-    autoencoder = train_autoencoder(normalized_train_data, encoding_dim, epochs=40,
-                                                          batch_size=16, l2_reg=0.00, dropout_rate=0.4)
+    encoding_dim = 128
+    autoencoder = train_autoencoder_conv(normalized_train_data, encoding_dim, epochs=10,
+                                                            batch_size=16, l2_reg=0.00, dropout_rate=0.4)
 
     # Obtain the encoded representation of the input data
     print(np.shape(normalized_train_data))
@@ -67,14 +60,22 @@ def main():
     train_predictions = train_reconstruction_errors > threshold
     test_predictions = test_reconstruction_errors > threshold
 
-    # Visualize the encoded data
+    # Visualizations
     visualize_encoded_data(encoded_train_data, encoded_test_data, train_predictions, test_predictions)
+    # visualize_melspectrogram(data_train[0])
+    # visualize_audio_length(audio_all)
 
     # Save the model
     # autoencoder.save('autoencoder_model.h5')
 
     compilation_time = time.time() - start_time
     print(f"Compilation time: {compilation_time} seconds")
+
+
+# Define a custom callback for logging
+class LoggingCallback(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        print(f"Epoch {epoch + 1}/{self.params['epochs']} - loss: {logs['loss']}")
 
 
 if __name__ == '__main__':

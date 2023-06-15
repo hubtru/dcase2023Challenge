@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 import numpy as np
 import librosa
+import os
 
 
 def visualize_encoded_data(train_data, test_data, train_classes, test_classes):
@@ -62,3 +63,35 @@ def visualize_melspectrogram(mel_spectrogram):
 
     # Show the plot
     plt.show()
+
+
+def visualize_audio_length(audio_dir):
+    audio_lengths = np.array([])
+
+    for folder in os.listdir(audio_dir):
+        folder_path = os.path.join(audio_dir, folder)
+        if not os.path.isdir(folder_path):
+            continue
+
+        # Get the subdirectories within each folder
+        subdirs = [subdir for subdir in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, subdir))]
+
+        # Iterate over the subdirectories
+        for subdir in subdirs:
+            subset_dir = os.path.join(folder_path, subdir)
+            for filename in os.listdir(subset_dir):
+                if filename.endswith('.wav'):
+                    file_path = os.path.join(subset_dir, filename)
+                    audio, sr = librosa.load(file_path)
+                    duration = librosa.get_duration(y=audio, sr=sr)
+                    audio_lengths = np.append(audio_lengths, duration)
+
+    plt.figure(figsize=(12, 6))
+    plt.bar(range(len(audio_lengths)), audio_lengths)
+    plt.xlabel('Audio Index')
+    plt.ylabel('Length (seconds)')
+    plt.title('Audio Length Comparison')
+    plt.tight_layout()
+    plt.show()
+
+
