@@ -18,8 +18,9 @@ def main():
 
     feature_options = ["mfcc", "mel", "stft"]
 
+    feature = feature_options[2]
     output_size = (128, 313)
-    feature = feature_options[1]
+
     # compute_all_features(audio_all, feature_type=feature, augment=False, num_augmentations=5,
                    #     augmentation_factor=0.02, output_size=output_size)
 
@@ -39,8 +40,8 @@ def main():
 
     # Train the autoencoder
     encoding_dim = 128
-    autoencoder = train_autoencoder_conv(normalized_train_data, encoding_dim, epochs=10,
-                                                            batch_size=16, l2_reg=0.00, dropout_rate=0.4)
+    autoencoder = train_autoencoder(normalized_train_data, encoding_dim, epochs=3,
+                                                            batch_size=16, l2_reg=0.001, dropout_rate=0.0)
 
     # Obtain the encoded representation of the input data
     print(np.shape(normalized_train_data))
@@ -52,11 +53,8 @@ def main():
     train_reconstruction_errors = np.mean(np.square(normalized_train_data - encoded_train_data), axis=(1, 2))
     test_reconstruction_errors = np.mean(np.square(normalized_test_data - encoded_test_data), axis=(1, 2))
 
-    print(train_reconstruction_errors)
-    print(test_reconstruction_errors)
-
     # Classify anomalies/non-anomalies based on reconstruction errors
-    threshold = 1.5  # Set your desired threshold value
+    threshold = 2  # Set your desired threshold value
     train_predictions = train_reconstruction_errors > threshold
     test_predictions = test_reconstruction_errors > threshold
 
