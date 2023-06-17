@@ -2,7 +2,9 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 import numpy as np
 import librosa
+import librosa.display
 import os
+import matplotlib.gridspec as gridspec
 
 
 def visualize_encoded_data(train_data, test_data, train_classes, test_classes):
@@ -93,5 +95,39 @@ def visualize_audio_length(audio_dir):
     plt.title('Audio Length Comparison')
     plt.tight_layout()
     plt.show()
+
+
+def visualize_audio_file(file_path):
+    # Load the audio file
+    audio, sr = librosa.load(file_path)
+
+    # Create the figure and gridspec
+    fig = plt.figure(figsize=(12, 8))
+    gs = gridspec.GridSpec(2, 1, height_ratios=[1, 2])
+
+    # Plot the waveform
+    ax_waveform = plt.subplot(gs[0])
+    librosa.display.waveshow(audio, sr=sr)
+    ax_waveform.set_title('Waveform')
+    ax_waveform.set_xlabel('Time (s)')
+    ax_waveform.set_ylabel('Amplitude')
+
+    # Compute the mel spectrogram
+    mel_spec = librosa.feature.melspectrogram(y=audio, sr=sr)
+    mel_spec_db = librosa.power_to_db(mel_spec, ref=np.max)
+
+    # Plot the mel spectrogram
+    ax_mel = plt.subplot(gs[1])
+    librosa.display.specshow(mel_spec_db, sr=sr, x_axis='time', y_axis='mel')
+    ax_mel.set_title('Mel Spectrogram')
+    ax_mel.set_xlabel('Time (s)')
+    ax_mel.set_ylabel('Mel Frequency')
+
+    # Adjust the spacing between subplots
+    plt.tight_layout()
+
+    # Show the plots
+    plt.show()
+
 
 
