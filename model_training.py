@@ -4,17 +4,17 @@ from keras.layers import Dense, Dropout, Conv1D, Conv2D, MaxPooling1D, MaxPool2D
 from keras.regularizers import l2
 
 
-def normalize_mfccs(mfccs_data):
+def normalize_features(features_data):
 
-    if mfccs_data.shape[1] == 1:
-        mfccs_data = np.squeeze(mfccs_data, axis=1)
+    if features_data.shape[1] == 1:
+        features_data = np.squeeze(features_data, axis=1)
 
     # Calculate the mean and standard deviation along the axis of each feature
-    mean = np.mean(mfccs_data, axis=(0, 2), keepdims=True)
-    std = np.std(mfccs_data, axis=(0, 2), keepdims=True)
+    mean = np.mean(features_data, axis=(0, 2), keepdims=True)
+    std = np.std(features_data, axis=(0, 2), keepdims=True)
 
     # Perform the normalization
-    normalized_data = (mfccs_data - mean) / std
+    normalized_data = (features_data - mean) / std
 
     print(np.shape(normalized_data))
     return normalized_data
