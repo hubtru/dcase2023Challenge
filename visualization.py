@@ -4,14 +4,17 @@ import numpy as np
 import librosa
 import librosa.display
 import os
-import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
 import sounddevice as sd
-import subprocess
 import random
+import seaborn as sns
+from bokeh.models import HoverTool, ColumnDataSource
+from bokeh.plotting import figure, show
+from bokeh.io import output_notebook
+import pandas as pd
 
 
-def visualize_encoded_data(train_data, test_data, train_classes, test_classes):
+def visualize_encoded_data(train_data, test_data, train_classes, test_classes, test_true_classes):
     # Reshape the data to have two dimensions
     train_data_2d = train_data.reshape(train_data.shape[0], -1)
     test_data_2d = test_data.reshape(test_data.shape[0], -1)
@@ -35,6 +38,21 @@ def visualize_encoded_data(train_data, test_data, train_classes, test_classes):
     axs[1].set_xlabel('Principal Component 1')
     axs[1].set_ylabel('Principal Component 2')
     axs[1].set_title('Test Data Visualization')
+
+    # Calculate true positive, false positive, true negative, and false negative
+    true_positive = np.logical_and(test_classes == 1, test_true_classes == 1)
+    false_positive = np.logical_and(test_classes == 1, test_true_classes == 0)
+    true_negative = np.logical_and(test_classes == 0, test_true_classes == 0)
+    false_negative = np.logical_and(test_classes == 0, test_true_classes == 1)
+
+    # Mark true positive, false positive, true negative, and false negative in the test data plot
+    axs[1].scatter(reduced_test_data[true_positive, 0], reduced_test_data[true_positive, 1], c='green', label='True Positive')
+    axs[1].scatter(reduced_test_data[false_positive, 0], reduced_test_data[false_positive, 1], c='red', label='False Positive')
+    axs[1].scatter(reduced_test_data[true_negative, 0], reduced_test_data[true_negative, 1], c='blue', label='True Negative')
+    axs[1].scatter(reduced_test_data[false_negative, 0], reduced_test_data[false_negative, 1], c='orange', label='False Negative')
+
+    # Add legend
+    axs[1].legend()
 
     # Adjust spacing between subplots
     plt.tight_layout()

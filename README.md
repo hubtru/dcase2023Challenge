@@ -41,8 +41,8 @@ First, edit `audio_all` to the path of your dataset root folder. The file struct
 `feature_options` shows all available features_types. The feature is set with `feature`. 
 The output_size of the feature_array can be declared in `output_size`. 
 
-In the first run it is currently necessary to use `compute_all_features()`. 
-It creates .json files for the features for each dataset and subset separately. 
+On the first run it is necessary to use `compute_all_features()`. 
+When chosen `save=True` it will create .json files for the features for each dataset and subset separately. 
 The files are saved here:
 - `dcase2023Challenge/` (root project directory)
   - `data_features/` (subdirectory)
@@ -52,3 +52,5 @@ The files are saved here:
 The files will then be loaded with `load_all_features()`. 
 The subdirectories can be specified in `datasets`, the nested subdirectories in `subsets`. 
 After the first run you only need `load_all_features()` to work with the existing files.  
+If you chose `save=False` then you have to always run `compute_all_features()`, 
+but  you can skip `load_all_features()`.

@@ -10,12 +10,13 @@ from scipy import interpolate
 # augment: Boolean, decides whether or not Data Augmentation is applied
 # num_augmentation: Number of augmentations per audio file
 # augmentation_factor: Magnitude of random noice added
+
 def compute_features(audio_dir, feature_type, augment=False, num_augmentations=5, augmentation_factor=0.02,
                      output_size=(20, 313)):
-    # Initialize lists to store features, classifications, and filenames
-    features = []
-    classifications = []
-    filenames = []
+    # Initialize NumPy arrays to store features, classifications, and filenames
+    features = np.empty((0, output_size[0], output_size[1]), dtype=np.float32)
+    classifications = np.empty((0,), dtype=np.int32)
+    filenames = np.empty((0,), dtype=np.object)
 
     # Iterate over audio files
     for filename in os.listdir(audio_dir):
@@ -24,32 +25,26 @@ def compute_features(audio_dir, feature_type, augment=False, num_augmentations=5
             audio, sr = librosa.load(filepath, sr=None)
 
             if augment:
-                augmented_features = []
+                augmented_features = np.empty((0, output_size[0], output_size[1]), dtype=np.float32)
                 for _ in range(num_augmentations):
                     augmented_audio = audio + np.random.randn(len(audio)) * augmentation_factor
                     feature = extract_features(audio=augmented_audio, sr=sr, feature_type=feature_type)
-                    augmented_features.append(feature)
+                    augmented_features = np.append(augmented_features, [feature], axis=0)
 
                 original_features = extract_features(audio=audio, sr=sr, feature_type=feature_type,
                                                      output_size=output_size)
-                augmented_features.append(original_features)
+                augmented_features = np.append(augmented_features, [original_features], axis=0)
 
-                features.append(np.array(augmented_features))
+                features = np.append(features, augmented_features, axis=0)
             else:
                 feature = extract_features(audio=audio, sr=sr, feature_type=feature_type,
                                             output_size=output_size)
-                features.append(feature)
+                features = np.append(features, [feature], axis=0)
 
             # Extract classification from the filename
             classification = 1 if "anomaly" in filename else 0
-            classifications.append(classification)
-
-            filenames.append(filename)
-
-    # Convert features, classifications, and filenames to numpy arrays
-    features = np.array(features)
-    classifications = np.array(classifications)
-    filenames = np.array(filenames)
+            classifications = np.append(classifications, classification)
+            filenames = np.append(filenames, filename)
 
     return features, classifications, filenames
 
@@ -103,14 +98,14 @@ def compute_all_features(audio_dir, datasets, feature_type='mfcc', augment=False
 def extract_features(audio, sr, feature_type, output_size):
     if feature_type == 'mfcc':
         mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=output_size[0])
-        return rescale_features(mfcc, output_size, feature_type)
+        return rescale_features(np.abs(mfcc), output_size, feature_type)
     elif feature_type == 'mel':
         mel_spectrogram = librosa.feature.melspectrogram(y=audio, sr=sr, n_mels=output_size[0])
-        rescaled_mel = rescale_features(mel_spectrogram, output_size, feature_type)
+        rescaled_mel = rescale_features(np.abs(mel_spectrogram), output_size, feature_type)
         return librosa.power_to_db(rescaled_mel, ref=np.max)
     elif feature_type == 'stft':
         stft = librosa.stft(audio)
-        return rescale_features(stft, output_size, feature_type)
+        return rescale_features(np.abs(stft), output_size, feature_type)
     elif feature_type == 'fft':
         fft = np.abs(np.fft.fft(audio))
         return rescale_features(fft, output_size, feature_type)
@@ -119,8 +114,8 @@ def extract_features(audio, sr, feature_type, output_size):
 
 
 def save_features(features_data, filenames, output_file):
-    # Convert NumPy arrays to lists if needed
-    features_data_serializable = {filename: features.tolist() if np.iscomplexobj(features) else features
+    # Convert NumPy arrays to Python lists
+    features_data_serializable = {filename: features.tolist() if isinstance(features, np.ndarray) else features
                                   for filename, features in zip(filenames, features_data)}
 
     # Save features to a JSON file
@@ -170,8 +165,6 @@ def load_all_features(feature_type, subsets, datasets, output_size):
     if features_test:
         features_test = np.concatenate(features_test, axis=0)
 
-    np.random.shuffle(features_train)
-    np.random.shuffle(features_test)
     return features_train, features_test
 
 

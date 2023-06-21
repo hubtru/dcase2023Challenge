@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from keras.layers import Dense, Dropout, Conv1D, Conv2D, MaxPooling1D, MaxPool2D, Input, UpSampling1D, UpSampling2D
 from keras.regularizers import l2
+from sklearn.utils import shuffle
 
 
 def normalize_features(features_data):
@@ -18,6 +19,15 @@ def normalize_features(features_data):
 
     print(np.shape(normalized_data))
     return normalized_data
+
+
+def shuffle_data_and_labels(data, labels=None, random_state=None):
+    if labels is not None:
+        shuffled_data, shuffled_labels = shuffle(data, labels, random_state=random_state)
+        return shuffled_data, shuffled_labels
+    else:
+        shuffled_data = shuffle(data, random_state=random_state)
+        return shuffled_data
 
 
 def train_autoencoder(data, encoding_dim, epochs, batch_size, dropout_rate=0.0, l2_reg=0.00):
