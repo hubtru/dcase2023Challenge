@@ -14,11 +14,11 @@ def main():
     # subset fan.
     audio_all = r'C:\Users\HABELS.COMPUTACENTER\Downloads\dcase_training_data'
     datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve']
-    # datasets = ['valve']
+    # datasets = ['bearing']
     subsets = ['train', 'test']
     feature_options = ["mfcc", "mel", "stft", "fft"]
 
-    feature = feature_options[1]
+    feature = feature_options[2]
     output_size = (32, 256)
 
     # Visualizations before calculations
@@ -27,11 +27,11 @@ def main():
 
     data_train, data_test, data_test_real_classification = compute_all_features(audio_all, datasets=datasets,
         feature_type=feature, augment=False, num_augmentations=5, augmentation_factor=0.02, output_size=output_size,
-        save=True)
+        save=False)
 
     # Load the features data from the JSON file
-    data_train, data_test = load_all_features(feature_type=feature, subsets=subsets,
-                                             datasets=datasets, output_size=output_size)
+    # data_train, data_test = load_all_features(feature_type=feature, subsets=subsets,
+                                          #    datasets=datasets, output_size=output_size)
 
     print(data_train.dtype)
     print(np.shape(data_train))
@@ -50,7 +50,7 @@ def main():
 
     # Train the autoencoder
     encoding_dim = 128
-    autoencoder = train_autoencoder(shuffled_train, encoding_dim, epochs=10,
+    autoencoder = train_autoencoder_conv(shuffled_train, encoding_dim, epochs=10,
                                                             batch_size=16, l2_reg=0.002, dropout_rate=0.0)
     # Load Model
     # autoencoder = tf.keras.models.load_model('autoencoder_model.h5')
@@ -66,7 +66,7 @@ def main():
     test_reconstruction_errors = np.mean(np.square(shuffled_test - encoded_test_data), axis=(1, 2))
 
     # Classify anomalies/non-anomalies based on reconstruction errors
-    threshold = np.percentile(train_reconstruction_errors, 99)
+    threshold = np.percentile(train_reconstruction_errors, 70)
     train_predictions = train_reconstruction_errors > threshold
     test_predictions = test_reconstruction_errors > threshold
 
