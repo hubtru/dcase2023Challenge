@@ -1,9 +1,39 @@
 import tensorflow as tf
 import numpy as np
-from keras.layers import Dense, Dropout, Conv1D, \
-    Conv2D, MaxPooling1D, MaxPooling2D, Input, UpSampling1D, UpSampling2D, Reshape
+from keras.layers import Dense, Dropout, \
+    Conv2D, MaxPooling2D, Input, UpSampling2D, Reshape
 from keras.regularizers import l2
 from sklearn.utils import shuffle
+from keras.models import Model
+
+
+class Autoencoder(tf.keras.Model):
+    def __init__(self, input_shape, latent_dim, l2_reg=0.00, dropout_rate=0.00):
+        super(Autoencoder, self).__init__()
+        self.latent_dim = latent_dim
+        self.encoder = tf.keras.Sequential([
+            Dense(input_shape, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            Dense(latent_dim, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))
+        ])
+        self.dropout = Dropout(dropout_rate)
+        self.decoder = tf.keras.Sequential([
+            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            Dense(input_shape, activation='sigmoid', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))
+        ])
+
+    def call(self, x):
+        encoded = self.encoder(x)
+        encoded = self.dropout(encoded)
+        decoded = self.decoder(encoded)
+        return decoded
 
 
 def normalize_features(features_data):
@@ -31,86 +61,41 @@ def shuffle_data_and_labels(data, labels=None, random_state=None):
         return shuffled_data
 
 
-def train_autoencoder(data, encoding_dim, epochs, batch_size, dropout_rate=0.0, l2_reg=0.00):
-    input_data = Input(shape=(data.shape[1], data.shape[2]))
+class ConvolutionalAutoencoder(tf.keras.Model):
+    def __init__(self, input_shape, latent_dim, l2_reg=0.00, dropout_rate=0.00):
+        super(ConvolutionalAutoencoder, self).__init__()
+        self.latent_dim = latent_dim
 
-    # Encoder
-    encoded = Dense(data.shape[2], activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))(input_data)
+        self.encoder = tf.keras.Sequential([
+            Conv2D(filters=32, kernel_size=(3, 3), activation='relu', padding='same',
+                   kernel_regularizer=tf.keras.regularizers.l2(l2_reg), input_shape=input_shape),
+            MaxPooling2D(pool_size=(2, 2)),
+            Conv2D(filters=64, kernel_size=(3, 3), activation='relu', padding='same',
+                   kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            MaxPooling2D(pool_size=(2, 2)),
+            Conv2D(filters=128, kernel_size=(3, 3), activation='relu', padding='same',
+                   kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            MaxPooling2D(pool_size=(2, 2))
+        ])
 
-    encoded = Dense(128, activation='relu', kernel_regularizer=l2(l2_reg))(encoded)
-    encoded = Dense(128, activation='relu', kernel_regularizer=l2(l2_reg))(encoded)
-    encoded = Dense(128, activation='relu', kernel_regularizer=l2(l2_reg))(encoded)
-    encoded = Dense(128, activation='relu', kernel_regularizer=l2(l2_reg))(encoded)
-    encoded = Dense(encoding_dim, activation='relu', kernel_regularizer=l2(l2_reg))(encoded)
+        self.dropout = Dropout(dropout_rate)
 
-    # Dropout layer
-    encoded = Dropout(dropout_rate)(encoded)
+        self.decoder = tf.keras.Sequential([
+            Conv2D(filters=128, kernel_size=(3, 3), activation='relu', padding='same',
+                   kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            UpSampling2D(size=(2, 2)),
+            Conv2D(filters=64, kernel_size=(3, 3), activation='relu', padding='same',
+                   kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            UpSampling2D(size=(2, 2)),
+            Conv2D(filters=32, kernel_size=(3, 3), activation='relu', padding='same',
+                   kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            UpSampling2D(size=(2, 2)),
+            Conv2D(filters=1, kernel_size=(3, 3), activation='sigmoid', padding='same')
+        ])
 
-    # Decoder
-    decoded = Dense(128, activation='relu', kernel_regularizer=l2(l2_reg))(encoded)
-    decoded = Dense(128, activation='relu', kernel_regularizer=l2(l2_reg))(decoded)
-    decoded = Dense(128, activation='relu', kernel_regularizer=l2(l2_reg))(decoded)
-    decoded = Dense(128, activation='relu', kernel_regularizer=l2(l2_reg))(decoded)
-    decoded = Dense(128, activation='relu', kernel_regularizer=l2(l2_reg))(decoded)
-
-    decoded = Dense(data.shape[2], activation='sigmoid', kernel_regularizer=l2(l2_reg))(decoded)
-
-    # Define the autoencoder model
-    autoencoder = tf.keras.Model(inputs=input_data, outputs=decoded)
-
-    # Compile the autoencoder
-    autoencoder.compile(optimizer='adam', loss='mean_squared_error')
-
-    # Train the autoencoder
-    for epoch in range(epochs):
-        # Print the epoch number
-        print(f"Epoch {epoch + 1}/{epochs}")
-
-        # Fit the data to the autoencoder model
-        autoencoder.fit(data, data, epochs=1, batch_size=batch_size, verbose=1)
-
-    return autoencoder
-
-
-def train_autoencoder_conv(data, encoding_dim, epochs, batch_size, dropout_rate=0.0, l2_reg=0.00):
-    input_data = Input(shape=(data.shape[1], data.shape[2], 1))
-
-    # Encoder
-    encoded = Conv2D(filters=32, kernel_size=(3, 3), activation='relu', padding='same',
-                     kernel_regularizer=l2(l2_reg))(input_data)
-    encoded = MaxPooling2D(pool_size=(2, 2))(encoded)
-    encoded = Conv2D(filters=64, kernel_size=(3, 3), activation='relu', padding='same',
-                     kernel_regularizer=l2(l2_reg))(encoded)
-    encoded = MaxPooling2D(pool_size=(2, 2))(encoded)
-    encoded = Conv2D(filters=128, kernel_size=(3, 3), activation='relu', padding='same',
-                     kernel_regularizer=l2(l2_reg))(encoded)
-    encoded = MaxPooling2D(pool_size=(2, 2))(encoded)
-
-    # Dropout layer
-    encoded = Dropout(dropout_rate)(encoded)
-
-    # Decoder
-    decoded = Conv2D(filters=128, kernel_size=(3, 3), activation='relu', padding='same',
-                     kernel_regularizer=l2(l2_reg))(encoded)
-    decoded = UpSampling2D(size=(2, 2))(decoded)
-    decoded = Conv2D(filters=64, kernel_size=(3, 3), activation='relu', padding='same',
-                     kernel_regularizer=l2(l2_reg))(decoded)
-    decoded = UpSampling2D(size=(2, 2))(decoded)
-    decoded = Conv2D(filters=32, kernel_size=(3, 3), activation='relu', padding='same',
-                     kernel_regularizer=l2(l2_reg))(decoded)
-    decoded = UpSampling2D(size=(2, 2))(decoded)
-
-    decoded = Conv2D(filters=1, kernel_size=(3, 3), activation='sigmoid', padding='same')(decoded)
-    decoded = Reshape(target_shape=(data.shape[1], data.shape[2]))(decoded)
-
-    # Define the autoencoder model
-    autoencoder = tf.keras.Model(inputs=input_data, outputs=decoded)
-
-    # Compile the autoencoder
-    autoencoder.compile(optimizer='adam', loss='mean_squared_error')
-
-    # Train the autoencoder
-    autoencoder.fit(data, data, epochs=epochs, batch_size=batch_size, verbose=1)
-
-    return autoencoder
+    def call(self, x):
+        encoded = self.encoder(x)
+        encoded = self.dropout(encoded)
+        decoded = self.decoder(encoded)
+        return decoded
 

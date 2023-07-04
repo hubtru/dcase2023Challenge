@@ -92,6 +92,7 @@ def compute_all_features(audio_dir, datasets, feature_type='mfcc', augment=False
                                         f"{feature_type}_{dataset}_{subdir}_{output_size[0]}_{output_size[1]}.json")
                 save_features(features, filenames, output_file)
 
+    test_classifications = np.column_stack((test_classifications, test_filenames))
     return train_features, test_features, test_classifications
 
 
