@@ -24,27 +24,23 @@ def compute_features(audio_dir, feature_type, augment=False, num_augmentations=5
             filepath = os.path.join(audio_dir, filename)
             audio, sr = librosa.load(filepath, sr=None)
 
-            if augment:
-                augmented_features = np.empty((0, output_size[0], output_size[1]), dtype=np.float32)
-                for _ in range(num_augmentations):
-                    augmented_audio = audio + np.random.randn(len(audio)) * augmentation_factor
-                    feature = extract_features(audio=augmented_audio, sr=sr, feature_type=feature_type)
-                    augmented_features = np.append(augmented_features, [feature], axis=0)
+            # Use audio_to_segments function to segment the audio
+            segments = audio_to_segments(audio, sr, sample_duration=3, overlap_duration=1)
 
-                original_features = extract_features(audio=audio, sr=sr, feature_type=feature_type,
-                                                     output_size=output_size)
-                augmented_features = np.append(augmented_features, [original_features], axis=0)
+            # Iterate over the segments and extract features for each segment
+            for i, segment in enumerate(segments):
+                # Get the filename for the segment (segment_1, segment_2, ...)
+                segment_filename = f"segment_{i + 1}_{filename}"
 
-                features = np.append(features, augmented_features, axis=0)
-            else:
-                feature = extract_features(audio=audio, sr=sr, feature_type=feature_type,
-                                            output_size=output_size)
+                # Extract features for the segment
+                feature = extract_features(audio=segment, sr=sr, feature_type=feature_type,
+                                           output_size=output_size)
+
+                # Append the features, classification, and filename for the segment
                 features = np.append(features, [feature], axis=0)
-
-            # Extract classification from the filename
-            classification = 1 if "anomaly" in filename else 0
-            classifications = np.append(classifications, classification)
-            filenames = np.append(filenames, filename)
+                classification = 1 if "anomaly" in filename else 0
+                classifications = np.append(classifications, classification)
+                filenames = np.append(filenames, segment_filename)
 
     return features, classifications, filenames
 
@@ -112,6 +108,37 @@ def extract_features(audio, sr, feature_type, output_size):
         return rescale_features(fft, output_size, feature_type)
     else:
         raise ValueError(f"Invalid feature type: {feature_type}. Supported types are 'mfcc', 'mel', 'stft', and 'fft'.")
+
+
+def audio_to_segments(audio, sr, sample_duration=3, overlap_duration=1):
+    # Calculate sample length and overlap length in samples
+    sample_length = sr * sample_duration
+    overlap_length = sr * overlap_duration
+
+    # Calculate the number of samples for the given audio
+    num_samples = len(audio)
+
+    # Calculate the number of segments
+    num_segments = (num_samples - sample_length) // (sample_length - overlap_length) + 1
+
+    # Initialize a list to store the segmented audio samples
+    audio_segments = []
+
+    # Iterate over the audio, extract segments, and add to the list
+    start = 0
+    for i in range(num_segments):
+        audio_segment = audio[start:start + sample_length]
+        audio_segments.append(audio_segment)
+
+        # Update the start position for the next segment
+        start += sample_length - overlap_length
+
+    # Pad the last segment with zeros if needed
+    if len(audio_segments[-1]) < sample_length:
+        padding = sample_length - len(audio_segments[-1])
+        audio_segments[-1] = np.concatenate((audio_segments[-1], np.zeros(padding)))
+
+    return audio_segments
 
 
 def save_features(features_data, filenames, output_file):

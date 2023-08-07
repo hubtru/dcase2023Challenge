@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from keras.layers import Dense, Dropout, \
-    Conv2D, MaxPooling2D, Input, UpSampling2D, Reshape
+    Conv2D, MaxPooling2D, Input, UpSampling2D, Reshape, Flatten
 from keras.regularizers import l2
 from sklearn.utils import shuffle
 from keras.models import Model
@@ -11,32 +11,28 @@ class Autoencoder(tf.keras.Model):
     def __init__(self, input_shape, latent_dim, l2_reg=0.00, dropout_rate=0.00):
         super(Autoencoder, self).__init__()
         self.latent_dim = latent_dim
+        self.flatten_layer = Flatten()
         self.encoder = tf.keras.Sequential([
-            Dense(input_shape, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
-            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
-            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
-            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            Dense(256, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
             Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
             Dense(latent_dim, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))
         ])
         self.dropout = Dropout(dropout_rate)
         self.decoder = tf.keras.Sequential([
             Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
-            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
-            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
-            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
-            Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
-            Dense(input_shape, activation='sigmoid', kernel_regularizer=tf.keras.regularizers.l2(l2_reg))
+            Dense(256, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
+            Dense(input_shape[0], activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2_reg)),
         ])
 
     def call(self, x):
-        encoded = self.encoder(x)
+        x_flattened = self.flatten_layer(x)
+        encoded = self.encoder(x_flattened)
         encoded = self.dropout(encoded)
         decoded = self.decoder(encoded)
         return decoded
 
 
-def normalize_features(features_data):
+def normalize_features(features_data, model):
 
     if features_data.shape[1] == 1:
         features_data = np.squeeze(features_data, axis=1)
@@ -47,6 +43,10 @@ def normalize_features(features_data):
 
     # Perform the normalization
     normalized_data = (features_data - mean) / std
+
+    if model == "Autoencoder":
+        x, height, width = normalized_data.shape
+        normalized_data = normalized_data.reshape(x, height * width)
 
     print(np.shape(normalized_data))
     return normalized_data
