@@ -12,7 +12,7 @@ from scipy import interpolate
 # augmentation_factor: Magnitude of random noice added
 
 def compute_features(audio_dir, feature_type, augment=False, num_augmentations=5, augmentation_factor=0.02,
-                     output_size=(20, 313)):
+                     output_size=(32, 96)):
     # Initialize NumPy arrays to store features, classifications, and filenames
     features = np.empty((0, output_size[0], output_size[1]), dtype=np.float32)
     classifications = np.empty((0,), dtype=np.int32)
@@ -38,10 +38,10 @@ def compute_features(audio_dir, feature_type, augment=False, num_augmentations=5
 
                 # Append the features, classification, and filename for the segment
                 features = np.append(features, [feature], axis=0)
+
                 classification = 1 if "anomaly" in filename else 0
                 classifications = np.append(classifications, classification)
                 filenames = np.append(filenames, segment_filename)
-
     return features, classifications, filenames
 
 
@@ -95,17 +95,17 @@ def compute_all_features(audio_dir, datasets, feature_type='mfcc', augment=False
 def extract_features(audio, sr, feature_type, output_size):
     if feature_type == 'mfcc':
         mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=output_size[0])
-        return rescale_features(np.abs(mfcc), output_size, feature_type)
+        return mfcc  # rescale_features(np.abs(mfcc), output_size, feature_type)
     elif feature_type == 'mel':
         mel_spectrogram = librosa.feature.melspectrogram(y=audio, sr=sr, n_mels=output_size[0])
-        rescaled_mel = rescale_features(np.abs(mel_spectrogram), output_size, feature_type)
-        return librosa.power_to_db(rescaled_mel, ref=np.max)
+        # rescaled_mel = rescale_features(np.abs(mel_spectrogram), output_size, feature_type)
+        return librosa.power_to_db(mel_spectrogram, ref=np.max)
     elif feature_type == 'stft':
         stft = librosa.stft(audio)
         return rescale_features(np.abs(stft), output_size, feature_type)
     elif feature_type == 'fft':
         fft = np.abs(np.fft.fft(audio))
-        return rescale_features(fft, output_size, feature_type)
+        return fft  # rescale_features(fft, output_size, feature_type)
     else:
         raise ValueError(f"Invalid feature type: {feature_type}. Supported types are 'mfcc', 'mel', 'stft', and 'fft'.")
 

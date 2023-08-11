@@ -44,7 +44,7 @@ def normalize_features(features_data, model):
     # Perform the normalization
     normalized_data = (features_data - mean) / std
 
-    if model == "Autoencoder":
+    if model == "Autoencoder" or model == "IsolationForest":
         x, height, width = normalized_data.shape
         normalized_data = normalized_data.reshape(x, height * width)
 

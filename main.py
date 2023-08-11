@@ -3,14 +3,16 @@ import numpy as np
 import time
 import keras_tuner as kt
 
+from conv_mixer import get_conv_mixer_256_8, run_experiment, visualization_plot, \
+    get_autoencoder_conv_mixer_256_8, run_autoencoder_experiment
+from isolation_forest_detector import IsolationForestDetector
 from preprocessing import compute_all_features, load_all_features
 from model_training import normalize_features, Autoencoder, ConvolutionalAutoencoder
 from visualization import visualize_encoded_data, visualize_melspectrogram, visualize_audio_length, visualize_datasets
 from model_training import shuffle_data_and_labels
-from evaluation import calculate_harmonic_mean, calculate_auc, calculate_pauc, calculate_scores_for_machine_types, \
-    compute_scores, prepare_input
-from keras import losses
+from evaluation import compute_scores
 
+from keras import losses, layers
 from keras_tuner import RandomSearch
 from keras.models import Model
 from keras.layers import Dense, Dropout, \
@@ -78,17 +80,17 @@ def main():
     # datasets = ['bandsaw', 'grinder', 'shaker', 'ToyDrone', 'ToyNscale', 'ToyTank', 'Vacuum']
     # datasets = ['bandsaw']
     feature_options = ["mfcc", "mel", "stft", "fft"]
-    model_options = ["Autoencoder", "ConvolutionalAutoencoder", None]
+    model_options = ["Autoencoder", "ConvolutionalAutoencoder", "IsolationForest", "ConvMixer", None]
     load_model = False
     save_model = False
-    epochs = 100
+    epochs = 10
     gaussion_noise = 0.0
     l2reg = 0.0001
     dropout_rate = 0
 
-    model = model_options[0]
+    model = model_options[3]
     feature = feature_options[2]
-    output_size = (32, 256)
+    output_size = (32, 96)
     model_name = f'saved_models/{model}_train_data_{feature}_epochs10_l2reg{l2reg}'
     checkpoint_path = f'checkpoints/best_model_{model}_newDense_{feature}_epochs{epochs}_l2reg{l2reg}_onlytrain.h5'
 
@@ -170,38 +172,68 @@ def main():
                               validation_data=(data_test_noise, data_test),
                               callbacks=[tensorboard_callback])
 
-    # autoencoder = train_autoencoder(shuffled_train, encoding_dim, epochs=5,
-                                                           # batch_size=16, l2_reg=0.002, dropout_rate=0.0)
+    elif model == "IsolationForest":
+        # Create and train Isolation Forest detector
+        isolation_forest_detector = IsolationForestDetector(contamination=0.05)
+        isolation_forest_detector.train(data_train)
+
+        # Detect anomalies
+        anomaly_scores, train_predictions = isolation_forest_detector.detect_anomalies(data_train_noise)
+        anomaly_scores, test_predictions = isolation_forest_detector.detect_anomalies(data_test_noise)
+
+    elif model == "ConvMixer":
+        # conv_mixer_model, encoder, decoder = get_autoencoder_conv_mixer_256_8()
+        # history, conv_mixer_model = run_autoencoder_experiment(conv_mixer_model, data_train_noise, data_test_noise)
+        conv_mixer_model = get_conv_mixer_256_8()
+        history, conv_mixer_model = run_experiment(conv_mixer_model, data_train_noise, data_test_noise)
+
+        patch_embeddings = conv_mixer_model.layers[2].get_weights()[0]
+        visualization_plot(patch_embeddings)
+
+        for i, layer in enumerate(conv_mixer_model.layers):
+            if isinstance(layer, layers.DepthwiseConv2D):
+                if layer.get_config()["kernel_size"] == (5, 5):
+                    print(i, layer)
+
+        idx = 26  # Taking a kernel from the middle of the network.
+
+        kernel = conv_mixer_model.layers[idx].get_weights()[0]
+        kernel = np.expand_dims(kernel.squeeze(), axis=2)
+        visualization_plot(kernel)
 
     # Obtain the encoded representation of the input data
     print(np.shape(data_train))
     print(np.shape(data_test))
-
-    encoded_train_data = autoencoder_class.predict(data_train_noise)
-    encoded_test_data = autoencoder_class.predict(data_test_noise)
+    if model == "ConvolutionalAutoencoder" or model == "Autoencoder":
+        encoded_train_data = autoencoder_class.predict(data_train_noise)
+        encoded_test_data = autoencoder_class.predict(data_test_noise)
+    else:
+        encoded_train_data = data_train
+        encoded_test_data = data_test
 
     if model == "ConvolutionalAutoencoder":
         encoded_train_data = np.squeeze(encoded_train_data, axis=-1)
         encoded_test_data = np.squeeze(encoded_test_data, axis=-1)
-    elif model == "Autoencoder":
+    elif model == "Autoencoder" or model == "IsolationForest":
         encoded_train_data = encoded_train_data.reshape(-1, output_size[0], output_size[1])
         encoded_test_data = encoded_test_data.reshape(-1, output_size[0], output_size[1])
         data_train = data_train.reshape(-1, output_size[0], output_size[1])
         data_test = data_test.reshape(-1, output_size[0], output_size[1])
 
-    # Calculate reconstruction errors for the encoded data
-    train_reconstruction_errors = np.mean(np.square(data_train - encoded_train_data), axis=(1, 2))
-    test_reconstruction_errors = np.mean(np.square(data_test - encoded_test_data), axis=(1, 2))
+    if model != "IsolationForest":
+        # Calculate reconstruction errors for the encoded data
+        train_reconstruction_errors = np.mean(np.square(data_train - encoded_train_data), axis=(1, 2))
+        test_reconstruction_errors = np.mean(np.square(data_test - encoded_test_data), axis=(1, 2))
 
-    # Calculate the mean and standard deviation of the training reconstruction errors
-    mean_reconstruction_error = np.mean(train_reconstruction_errors)
-    std_reconstruction_error = np.std(train_reconstruction_errors)
+        # Calculate the mean and standard deviation of the training reconstruction errors
+        mean_reconstruction_error = np.mean(train_reconstruction_errors)
+        std_reconstruction_error = np.std(train_reconstruction_errors)
 
-    # Set the threshold as two standard deviations above the mean
-    threshold = mean_reconstruction_error + 2 * std_reconstruction_error
+        # Set the threshold as two standard deviations above the mean
+        threshold = mean_reconstruction_error + 2 * std_reconstruction_error
 
-    train_predictions = train_reconstruction_errors > threshold
-    test_predictions = test_reconstruction_errors > threshold
+        train_predictions = train_reconstruction_errors > threshold
+        test_predictions = test_reconstruction_errors > threshold
 
     # Visualizations after calculations
     visualize_encoded_data(encoded_train_data, encoded_test_data, train_predictions, test_predictions,
