@@ -13,61 +13,6 @@ from model_training import shuffle_data_and_labels
 from evaluation import compute_scores
 
 from keras import losses, layers
-from keras_tuner import RandomSearch
-from keras.models import Model
-from keras.layers import Dense, Dropout, \
-    Conv2D, MaxPooling2D, Input, UpSampling2D, Reshape, Flatten
-
-
-class AutoencoderBlock(Model):
-    def __init__(self, latent_dim, hp):
-        super().__init__()
-        self.latent_dim = latent_dim
-        self.encoder_layers = []
-        for i in range(
-            hp.Int("encoder_layers", min_value=2, max_value=5, step=1, default=0)
-        ):
-            self.encoder_layers.append(
-                Dense(
-                    units=hp.Choice("encoder_layers_{i}".format(i=i), [256]),
-                    activation="relu",
-                )
-            )
-        self.encoder_layers.append(Dense(latent_dim, activation="relu"))
-        self.decoder_layers = []
-        for i in range(
-            hp.Int("decoder_layers", min_value=2, max_value=5, step=1, default=0)
-        ):
-            self.decoder_layers.append(
-                Dense(
-                    units=hp.Choice("decoder_layers_{i}".format(i=i), [256]),
-                    activation="relu",
-                )
-            )
-        self.decoder_layers.append(Dense(8192, activation="sigmoid"))
-
-    def encode(self, encoder_input):
-        encoder_output = Flatten()(encoder_input)
-        for layer in self.encoder_layers:
-            encoder_output = layer(encoder_output)
-        return encoder_output
-
-    def decode(self, decoder_input):
-        decoder_output = decoder_input
-        for layer in self.decoder_layers:
-            decoder_output = layer(decoder_output)
-        decoder_output = Reshape((32, 256))(decoder_output)
-        return decoder_output
-
-    def call(self, x):
-        return self.decode(self.encode(x))
-
-
-def build_model(hp):
-    latent_dim = 64
-    autoencoder = AutoencoderBlock(latent_dim, hp)
-    autoencoder.compile(optimizer="adam", loss="mse")
-    return autoencoder
 
 
 def main():
@@ -76,7 +21,7 @@ def main():
     # datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve']
     # datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve', 'bandsaw', 'grinder',
                #  'shaker', 'ToyDrone', 'ToyNscale', 'ToyTank', 'Vacuum']
-    datasets = ['ToyTrain']
+    datasets = ['Trial']
     # datasets = ['bandsaw', 'grinder', 'shaker', 'ToyDrone', 'ToyNscale', 'ToyTank', 'Vacuum']
     # datasets = ['bandsaw']
     feature_options = ["mfcc", "mel", "stft", "fft"]
@@ -88,9 +33,9 @@ def main():
     l2reg = 0.0001
     dropout_rate = 0
 
-    model = model_options[3]
-    feature = feature_options[2]
-    output_size = (32, 96)
+    model = model_options[1]
+    feature = feature_options[1]
+    output_size = (32, 256)
     model_name = f'saved_models/{model}_train_data_{feature}_epochs10_l2reg{l2reg}'
     checkpoint_path = f'checkpoints/best_model_{model}_newDense_{feature}_epochs{epochs}_l2reg{l2reg}_onlytrain.h5'
 
@@ -106,9 +51,18 @@ def main():
     # data_train, data_test = load_all_features(feature_type=feature, subsets=subsets,
                                           #    datasets=datasets, output_size=output_size)
 
+    for i in range(5):
+        visualize_melspectrogram(data_train[i])
+        visualize_melspectrogram(data_test[i])
+
     # Normalize the data
     data_train = normalize_features(data_train, model)
     data_test = normalize_features(data_test, model)
+
+    for i in range(5):
+        visualize_melspectrogram(data_train[i])
+        visualize_melspectrogram(data_test[i])
+
 
     # Add noise
     data_train_noise = data_train + gaussion_noise * tf.random.normal(shape=data_train.shape)
@@ -116,22 +70,7 @@ def main():
     data_test_noise = data_test + gaussion_noise * tf.random.normal(shape=data_test.shape)
 
     data_test, test_real_classification = shuffle_data_and_labels(data_test, test_real_classification, 42)
-    '''
-    tuner = RandomSearch(
-        build_model,
-        objective="val_loss",
-        max_trials=16,
-        overwrite=True,
-        directory="dense_256",
-        project_name="dcase_fine_tune",
-    )
 
-    tuner.search(data_train, data_train, epochs=50, validation_data=(data_test, data_test))
-
-    autoencoder = tuner.get_best_models(num_models=1)[0]
-    tuner.results_summary(1)
-    autoencoder.evaluate(data_test, data_test)
-    '''
     # Train the autoencoder
     latent_dim = 64
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir='logs/', histogram_freq=1)

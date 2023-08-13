@@ -22,15 +22,16 @@ def compute_features(audio_dir, feature_type, augment=False, num_augmentations=5
     for filename in os.listdir(audio_dir):
         if filename.endswith('.wav'):
             filepath = os.path.join(audio_dir, filename)
-            audio, sr = librosa.load(filepath, sr=None)
+            segments, sr = librosa.load(filepath, sr=None)
 
             # Use audio_to_segments function to segment the audio
-            segments = audio_to_segments(audio, sr, sample_duration=3, overlap_duration=1)
+            if 1 == 2:
+                segments = audio_to_segments(segments, sr, sample_duration=3, overlap_duration=1)
 
             # Iterate over the segments and extract features for each segment
             for i, segment in enumerate(segments):
                 # Get the filename for the segment (segment_1, segment_2, ...)
-                segment_filename = f"segment_{i + 1}_{filename}"
+                segment_filename = f"{filename}_segment_{i + 1}"
 
                 # Extract features for the segment
                 feature = extract_features(audio=segment, sr=sr, feature_type=feature_type,
@@ -95,11 +96,11 @@ def compute_all_features(audio_dir, datasets, feature_type='mfcc', augment=False
 def extract_features(audio, sr, feature_type, output_size):
     if feature_type == 'mfcc':
         mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=output_size[0])
-        return mfcc  # rescale_features(np.abs(mfcc), output_size, feature_type)
+        return rescale_features(np.abs(mfcc), output_size, feature_type)
     elif feature_type == 'mel':
         mel_spectrogram = librosa.feature.melspectrogram(y=audio, sr=sr, n_mels=output_size[0])
-        # rescaled_mel = rescale_features(np.abs(mel_spectrogram), output_size, feature_type)
-        return librosa.power_to_db(mel_spectrogram, ref=np.max)
+        rescaled_mel = rescale_features(np.abs(mel_spectrogram), output_size, feature_type)
+        return librosa.power_to_db(rescaled_mel, ref=np.max)
     elif feature_type == 'stft':
         stft = librosa.stft(audio)
         return rescale_features(np.abs(stft), output_size, feature_type)
@@ -205,11 +206,13 @@ def rescale_features(features, output_size, feature_type):
 
         # Rescaling function for the time axis using cubic spline interpolation
         rescale_time = interpolate.interp1d(
-            np.arange(current_size[1]), features, axis=1, kind='cubic'
+            np.arange(current_size[1]), features, axis=1, kind='cubic', bounds_error=False, fill_value="extrapolate"
         )
 
-        # Perform rescaling
-        return rescale_time(np.arange(output_size[1]) * scale_factor_time)
+        # Perform rescaling and clamp the time values
+        rescaled_time_values = np.arange(output_size[1]) * scale_factor_time
+        clamped_time_values = np.clip(rescaled_time_values, 0, current_size[1] - 1)
+        return rescale_time(clamped_time_values)
 
     else:
         # Compute the scaling factors for the frequency and time axes

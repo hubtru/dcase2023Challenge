@@ -110,7 +110,7 @@ def run_autoencoder_experiment(autoencoder, train_noisy_data, test_noisy_data):
     return history, autoencoder, test_reconstructions
 
 
-def get_conv_mixer_256_8(image_size=(32, 96, 1), filters=256, depth=8, kernel_size=5, patch_size=2, num_classes=10):
+def get_conv_mixer_256_8(image_size=(32, 96, 1), filters=32, depth=8, kernel_size=5, patch_size=2, num_classes=10):
     """ConvMixer-256/8: https://openreview.net/pdf?id=TVHS5Y4dNvM.
     The hyperparameter values are taken from the paper.
     """
