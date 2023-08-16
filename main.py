@@ -21,7 +21,7 @@ def main():
     # datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve']
     # datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve', 'bandsaw', 'grinder',
                #  'shaker', 'ToyDrone', 'ToyNscale', 'ToyTank', 'Vacuum']
-    datasets = ['Trial']
+    datasets = ['fan', 'gearbox']
     # datasets = ['bandsaw', 'grinder', 'shaker', 'ToyDrone', 'ToyNscale', 'ToyTank', 'Vacuum']
     # datasets = ['bandsaw']
     feature_options = ["mfcc", "mel", "stft", "fft"]
@@ -33,7 +33,7 @@ def main():
     l2reg = 0.0001
     dropout_rate = 0
 
-    model = model_options[1]
+    model = model_options[2]
     feature = feature_options[1]
     output_size = (32, 256)
     model_name = f'saved_models/{model}_train_data_{feature}_epochs10_l2reg{l2reg}'
@@ -51,18 +51,9 @@ def main():
     # data_train, data_test = load_all_features(feature_type=feature, subsets=subsets,
                                           #    datasets=datasets, output_size=output_size)
 
-    for i in range(5):
-        visualize_melspectrogram(data_train[i])
-        visualize_melspectrogram(data_test[i])
-
     # Normalize the data
     data_train = normalize_features(data_train, model)
     data_test = normalize_features(data_test, model)
-
-    for i in range(5):
-        visualize_melspectrogram(data_train[i])
-        visualize_melspectrogram(data_test[i])
-
 
     # Add noise
     data_train_noise = data_train + gaussion_noise * tf.random.normal(shape=data_train.shape)
@@ -70,6 +61,7 @@ def main():
     data_test_noise = data_test + gaussion_noise * tf.random.normal(shape=data_test.shape)
 
     data_test, test_real_classification = shuffle_data_and_labels(data_test, test_real_classification, 42)
+    print(test_real_classification.head(5))
 
     # Train the autoencoder
     latent_dim = 64
@@ -121,10 +113,12 @@ def main():
         anomaly_scores, test_predictions = isolation_forest_detector.detect_anomalies(data_test_noise)
 
     elif model == "ConvMixer":
-        # conv_mixer_model, encoder, decoder = get_autoencoder_conv_mixer_256_8()
-        # history, conv_mixer_model = run_autoencoder_experiment(conv_mixer_model, data_train_noise, data_test_noise)
-        conv_mixer_model = get_conv_mixer_256_8()
-        history, conv_mixer_model = run_experiment(conv_mixer_model, data_train_noise, data_test_noise)
+        #data_train_noise = data_train_noise[:, :, :, np.newaxis]
+        #data_test_noise = data_test_noise[:, :, :, np.newaxis]
+        conv_mixer_model, encoder, decoder = get_autoencoder_conv_mixer_256_8()
+        history, conv_mixer_model = run_autoencoder_experiment(conv_mixer_model, data_train_noise, data_test_noise)
+        # conv_mixer_model = get_conv_mixer_256_8()
+        # history, conv_mixer_model = run_experiment(conv_mixer_model, data_train_noise, data_test_noise)
 
         patch_embeddings = conv_mixer_model.layers[2].get_weights()[0]
         visualization_plot(patch_embeddings)
@@ -176,11 +170,11 @@ def main():
 
     # Visualizations after calculations
     visualize_encoded_data(encoded_train_data, encoded_test_data, train_predictions, test_predictions,
-                            test_real_classification[:, 0])
+                            test_real_classification["anomaly"])
     # visualize_melspectrogram(data_train[0])
 
     # Evaluation
-    compute_scores(test_real_classification[:, 0], test_predictions)
+    compute_scores(test_real_classification["anomaly"], test_predictions)
 
     # Save the model
     if save_model:

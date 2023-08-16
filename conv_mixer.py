@@ -35,7 +35,7 @@ def conv_mixer_block(x, filters: int, kernel_size: int):
     return x
 
 
-def get_autoencoder_conv_mixer_256_8(input_shape=(32, 96, 1), filters=256, depth=8, kernel_size=5, patch_size=2,
+def get_autoencoder_conv_mixer_256_8(input_shape=(32, 256, 1), filters=32, depth=8, kernel_size=5, patch_size=2,
                                      latent_dim=64):
     """Modified ConvMixer-based Autoencoder.
     """

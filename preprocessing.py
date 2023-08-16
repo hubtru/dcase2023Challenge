@@ -4,6 +4,7 @@ import json
 import numpy as np
 from scipy.ndimage import zoom
 from scipy import interpolate
+import pandas as pd
 
 
 # feature_type: 'mel', 'stft' or 'mfcc', decides between mfcc, stft or melspectrogram as features
@@ -12,7 +13,7 @@ from scipy import interpolate
 # augmentation_factor: Magnitude of random noice added
 
 def compute_features(audio_dir, feature_type, augment=False, num_augmentations=5, augmentation_factor=0.02,
-                     output_size=(32, 96)):
+                     output_size=(32, 256)):
     # Initialize NumPy arrays to store features, classifications, and filenames
     features = np.empty((0, output_size[0], output_size[1]), dtype=np.float32)
     classifications = np.empty((0,), dtype=np.int32)
@@ -25,29 +26,29 @@ def compute_features(audio_dir, feature_type, augment=False, num_augmentations=5
             segments, sr = librosa.load(filepath, sr=None)
 
             # Use audio_to_segments function to segment the audio
-            if 1 == 2:
-                segments = audio_to_segments(segments, sr, sample_duration=3, overlap_duration=1)
+            # segments = audio_to_segments(segments, sr, sample_duration=3, overlap_duration=1)
 
             # Iterate over the segments and extract features for each segment
-            for i, segment in enumerate(segments):
-                # Get the filename for the segment (segment_1, segment_2, ...)
-                segment_filename = f"{filename}_segment_{i + 1}"
+            # for i, segment in enumerate(segments):
 
-                # Extract features for the segment
-                feature = extract_features(audio=segment, sr=sr, feature_type=feature_type,
-                                           output_size=output_size)
+            # Get the filename for the segment (segment_1, segment_2, ...)
+            # segment_filename = f"{filename}_segment_{0 + 1}"
 
-                # Append the features, classification, and filename for the segment
-                features = np.append(features, [feature], axis=0)
+            # Extract features for the segment
+            feature = extract_features(audio=segments, sr=sr, feature_type=feature_type,
+                                       output_size=output_size)
 
-                classification = 1 if "anomaly" in filename else 0
-                classifications = np.append(classifications, classification)
-                filenames = np.append(filenames, segment_filename)
+            # Append the features, classification, and filename for the segment
+            features = np.append(features, [feature], axis=0)
+
+            classification = 1 if "anomaly" in filename else 0
+            classifications = np.append(classifications, classification)
+            filenames = np.append(filenames, filename)
     return features, classifications, filenames
 
 
 def compute_all_features(audio_dir, datasets, feature_type='mfcc', augment=False, num_augmentations=5,
-                         augmentation_factor=0.02, output_size=(20, 313), save=False):
+                         augmentation_factor=0.02, output_size=(32, 256), save=False):
     data_folder = "data_features"
     os.makedirs(data_folder, exist_ok=True)
 
@@ -89,7 +90,8 @@ def compute_all_features(audio_dir, datasets, feature_type='mfcc', augment=False
                                         f"{feature_type}_{dataset}_{subdir}_{output_size[0]}_{output_size[1]}.json")
                 save_features(features, filenames, output_file)
 
-    test_classifications = np.column_stack((test_classifications, test_filenames))
+    # test_classifications = np.column_stack((test_classifications, test_filenames))
+    test_classifications = create_dataframe_from_filenames(test_filenames)
     return train_features, test_features, test_classifications
 
 
@@ -140,6 +142,48 @@ def audio_to_segments(audio, sr, sample_duration=3, overlap_duration=1):
         audio_segments[-1] = np.concatenate((audio_segments[-1], np.zeros(padding)))
 
     return audio_segments
+
+
+def create_dataframe_from_filenames(filenames):
+    data = []
+
+    for filename in filenames:
+        no_suffix = filename[:-4]
+        parts = no_suffix.split('_')
+
+        # Extract different parts from the filename
+        section = parts[1]
+        category = parts[2]
+        dataset = parts[3]
+        anomaly = 1 if "anomaly" in parts[4] else -1
+        number = parts[5]
+        feature_names = parts[6::2]
+        features = parts[7::2]  # Start from the 6th part and take every second part onwards.
+
+        # Create a dictionary with the extracted parts
+        row_data = {
+            "filename": filename,
+            "section": section,
+            "category": category,
+            "dataset": dataset,
+            "anomaly": anomaly,
+            "number": number
+        }
+
+        # Add feature names as columns
+        for i, feature_name in enumerate(feature_names):
+            row_data[f"FeatureName{i + 1}"] = feature_name
+
+        # Add feature columns
+        for i, feature in enumerate(features):
+            row_data[f"Feature{i + 1}"] = feature
+
+        data.append(row_data)
+
+    # Create a DataFrame from the list of dictionaries
+    df = pd.DataFrame(data)
+
+    return df
 
 
 def save_features(features_data, filenames, output_file):
