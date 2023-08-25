@@ -25,15 +25,6 @@ def compute_features(audio_dir, feature_type, augment=False, num_augmentations=5
             filepath = os.path.join(audio_dir, filename)
             segments, sr = librosa.load(filepath, sr=None)
 
-            # Use audio_to_segments function to segment the audio
-            # segments = audio_to_segments(segments, sr, sample_duration=3, overlap_duration=1)
-
-            # Iterate over the segments and extract features for each segment
-            # for i, segment in enumerate(segments):
-
-            # Get the filename for the segment (segment_1, segment_2, ...)
-            # segment_filename = f"{filename}_segment_{0 + 1}"
-
             # Extract features for the segment
             feature = extract_features(audio=segments, sr=sr, feature_type=feature_type,
                                        output_size=output_size)
@@ -106,7 +97,7 @@ def extract_features(audio, sr, feature_type, output_size):
     elif feature_type == 'stft':
         stft = librosa.stft(audio)
         return rescale_features(np.abs(stft), output_size, feature_type)
-    elif feature_type == 'fft':
+    elif feature_type == 'fft':  # fft currently not working properly, since its 1D
         fft = np.abs(np.fft.fft(audio))
         return fft  # rescale_features(fft, output_size, feature_type)
     else:
@@ -155,7 +146,7 @@ def create_dataframe_from_filenames(filenames):
         section = parts[1]
         category = parts[2]
         dataset = parts[3]
-        anomaly = 1 if "anomaly" in parts[4] else -1
+        anomaly = 1 if "anomaly" in parts[4] else 0
         number = parts[5]
         feature_names = parts[6::2]
         features = parts[7::2]  # Start from the 6th part and take every second part onwards.

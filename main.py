@@ -1,18 +1,22 @@
+import pandas as pd
 import tensorflow as tf
 import numpy as np
 import time
 import keras_tuner as kt
+import os
 
 from conv_mixer import get_conv_mixer_256_8, run_experiment, visualization_plot, \
-    get_autoencoder_conv_mixer_256_8, run_autoencoder_experiment
+    get_autoencoder_conv_mixer_256_8, run_autoencoder_experiment, make_datasets
 from isolation_forest_detector import IsolationForestDetector
-from preprocessing import compute_all_features, load_all_features
+from preprocessing import compute_all_features, load_all_features, compute_features, create_dataframe_from_filenames
 from model_training import normalize_features, Autoencoder, ConvolutionalAutoencoder
 from visualization import visualize_encoded_data, visualize_melspectrogram, visualize_audio_length, visualize_datasets
 from model_training import shuffle_data_and_labels
 from evaluation import compute_scores
 
 from keras import losses, layers
+
+pd.set_option('display.max_columns', None)
 
 
 def main():
@@ -21,7 +25,8 @@ def main():
     # datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve']
     # datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve', 'bandsaw', 'grinder',
                #  'shaker', 'ToyDrone', 'ToyNscale', 'ToyTank', 'Vacuum']
-    datasets = ['fan', 'gearbox']
+    # datasets = ['fan', 'gearbox']
+    datasets = ['Trial2']
     # datasets = ['bandsaw', 'grinder', 'shaker', 'ToyDrone', 'ToyNscale', 'ToyTank', 'Vacuum']
     # datasets = ['bandsaw']
     feature_options = ["mfcc", "mel", "stft", "fft"]
@@ -33,9 +38,9 @@ def main():
     l2reg = 0.0001
     dropout_rate = 0
 
-    model = model_options[2]
+    model = model_options[3]
     feature = feature_options[1]
-    output_size = (32, 256)
+    output_size = (256, 256)
     model_name = f'saved_models/{model}_train_data_{feature}_epochs10_l2reg{l2reg}'
     checkpoint_path = f'checkpoints/best_model_{model}_newDense_{feature}_epochs{epochs}_l2reg{l2reg}_onlytrain.h5'
 
@@ -43,7 +48,25 @@ def main():
     # visualize_audio_length(audio_all)
     # visualize_datasets(audio_all)
 
-    data_train, data_test, test_real_classification = compute_all_features(audio_all, datasets=datasets,
+    if datasets[0] == "Trial" or datasets[0] == "Trial2":
+        train_path = os.path.join(audio_all, datasets[0], "train")
+        test_path = os.path.join(audio_all, datasets[0], "test")
+        val_path = os.path.join(audio_all, datasets[0], "val")
+        data_train, train_real_classification, train_filenames = compute_features(train_path, feature_type=feature,
+                                                                                 output_size=output_size)
+        data_test, test_real_classification, test_filenames = compute_features(test_path, feature_type=feature,
+                                                                                 output_size=output_size)
+        data_val, val_real_classification, val_filenames = compute_features(val_path, feature_type=feature,
+                                                                                 output_size=output_size)
+
+        train_real_classification = create_dataframe_from_filenames(train_filenames)
+        test_real_classification = create_dataframe_from_filenames(test_filenames)
+        val_real_classification = create_dataframe_from_filenames(val_filenames)
+        data_val = normalize_features(data_val, model)
+        data_val, val_real_classification = shuffle_data_and_labels(data_val, val_real_classification, 42)
+
+    else:
+        data_train, data_test, test_real_classification = compute_all_features(audio_all, datasets=datasets,
         feature_type=feature, augment=False, num_augmentations=5, augmentation_factor=0.02, output_size=output_size,
         save=False)
 
@@ -55,13 +78,13 @@ def main():
     data_train = normalize_features(data_train, model)
     data_test = normalize_features(data_test, model)
 
+    data_test, test_real_classification = shuffle_data_and_labels(data_test, test_real_classification, 42)
+    print(test_real_classification.head(5))
+
     # Add noise
     data_train_noise = data_train + gaussion_noise * tf.random.normal(shape=data_train.shape)
     print(data_train_noise.shape)
     data_test_noise = data_test + gaussion_noise * tf.random.normal(shape=data_test.shape)
-
-    data_test, test_real_classification = shuffle_data_and_labels(data_test, test_real_classification, 42)
-    print(test_real_classification.head(5))
 
     # Train the autoencoder
     latent_dim = 64
@@ -113,12 +136,22 @@ def main():
         anomaly_scores, test_predictions = isolation_forest_detector.detect_anomalies(data_test_noise)
 
     elif model == "ConvMixer":
-        #data_train_noise = data_train_noise[:, :, :, np.newaxis]
-        #data_test_noise = data_test_noise[:, :, :, np.newaxis]
-        conv_mixer_model, encoder, decoder = get_autoencoder_conv_mixer_256_8()
-        history, conv_mixer_model = run_autoencoder_experiment(conv_mixer_model, data_train_noise, data_test_noise)
-        # conv_mixer_model = get_conv_mixer_256_8()
-        # history, conv_mixer_model = run_experiment(conv_mixer_model, data_train_noise, data_test_noise)
+        data_train_noise = data_train_noise[:, :, :, np.newaxis] # (x, 256, 256, 1)
+        data_test_noise = data_test_noise[:, :, :, np.newaxis]
+        data_val = data_val[:, :, :, np.newaxis]
+
+        # test_real_classification["anomaly"] = test_real_classification.astype(np.float32)
+        print(data_train_noise[0])
+        print(data_train_noise.dtype)
+        # conv_mixer_model = get_autoencoder_conv_mixer_256_8(input_shape=data_train_noise.shape[1:])
+        # history, conv_mixer_model, test_reconstructions = run_autoencoder_experiment(conv_mixer_model, data_train_noise, data_test_noise)
+
+        train_dataset = make_datasets(data_train_noise, train_real_classification["anomaly"], is_train=True)
+        test_dataset = make_datasets(data_test_noise, test_real_classification["anomaly"])
+        val_dataset = make_datasets(data_val, val_real_classification["anomaly"])
+
+        conv_mixer_model = get_conv_mixer_256_8()
+        history, conv_mixer_model = run_experiment(conv_mixer_model, train_dataset, test_dataset, val_dataset)
 
         patch_embeddings = conv_mixer_model.layers[2].get_weights()[0]
         visualization_plot(patch_embeddings)

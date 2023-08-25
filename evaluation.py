@@ -14,8 +14,12 @@ def compute_scores(true_labels, predicted_labels):
 
 def prepare_input(y_true, y_scores):
     # Ensure the correct data type
+
     y_true = y_true.astype(float)
     y_scores = y_scores.astype(float)
+    y_true = np.where(y_true == 0, -1, y_true)
+    y_scores = np.where(y_scores == 0, -1, y_scores)
+
     return y_true, y_scores
 
 
