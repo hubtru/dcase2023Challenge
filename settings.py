@@ -5,9 +5,6 @@ import time
 import keras_tuner as kt
 import os
 
-from conv_mixer import get_conv_mixer_256_8, run_experiment, visualization_plot, \
-    get_autoencoder_conv_mixer_256_8, run_autoencoder_experiment, make_datasets
-from isolation_forest_detector import IsolationForestDetector
 from preprocessing import compute_all_features, load_all_features, compute_features, create_dataframe_from_filenames
 from model_training import normalize_features, Autoencoder, ConvolutionalAutoencoder
 from visualization import visualize_encoded_data, visualize_melspectrogram, visualize_audio_length, visualize_datasets
@@ -19,12 +16,12 @@ from keras import losses, layers
 pd.set_option('display.max_columns', None)
 
 
-def main():
+def start_model():
     start_time = time.time()
     audio_all = r'C:\Users\HABELS.COMPUTACENTER\Downloads\dcase_training_data'
     # datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve']
     # datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve', 'bandsaw', 'grinder',
-               #  'shaker', 'ToyDrone', 'ToyNscale', 'ToyTank', 'Vacuum']
+    #  'shaker', 'ToyDrone', 'ToyNscale', 'ToyTank', 'Vacuum']
     # datasets = ['fan', 'gearbox']
     datasets = ['Trial2']
     # datasets = ['bandsaw', 'grinder', 'shaker', 'ToyDrone', 'ToyNscale', 'ToyTank', 'Vacuum']
@@ -47,8 +44,13 @@ def main():
     # Visualizations before calculations
     # visualize_audio_length(audio_all)
     # visualize_datasets(audio_all)
+    return audio_all, datasets, output_size, feature
 
-    if datasets[0] == "Trial" or datasets[0] == "Trial2":
+
+def main():
+    '''
+
+    if (datasets[0] == "Trial" or datasets[0] == "Trial2"):
         train_path = os.path.join(audio_all, datasets[0], "train")
         test_path = os.path.join(audio_all, datasets[0], "test")
         val_path = os.path.join(audio_all, datasets[0], "val")
@@ -63,7 +65,10 @@ def main():
         test_real_classification = create_dataframe_from_filenames(test_filenames)
         val_real_classification = create_dataframe_from_filenames(val_filenames)
         data_val = normalize_features(data_val, model)
-        data_val, val_real_classification = shuffle_data_and_labels(data_val, val_real_classification, 42)
+        # data_val, val_real_classification = shuffle_data_and_labels(data_val, val_real_classification, 42)
+        print(train_real_classification["anomaly"])
+        print(test_real_classification["anomaly"])
+        print(val_real_classification["anomaly"])
 
     else:
         data_train, data_test, test_real_classification = compute_all_features(audio_all, datasets=datasets,
@@ -78,7 +83,7 @@ def main():
     data_train = normalize_features(data_train, model)
     data_test = normalize_features(data_test, model)
 
-    data_test, test_real_classification = shuffle_data_and_labels(data_test, test_real_classification, 42)
+    # data_test, test_real_classification = shuffle_data_and_labels(data_test, test_real_classification, 42)
     print(test_real_classification.head(5))
 
     # Add noise
@@ -141,8 +146,6 @@ def main():
         data_val = data_val[:, :, :, np.newaxis]
 
         # test_real_classification["anomaly"] = test_real_classification.astype(np.float32)
-        print(data_train_noise[0])
-        print(data_train_noise.dtype)
         # conv_mixer_model = get_autoencoder_conv_mixer_256_8(input_shape=data_train_noise.shape[1:])
         # history, conv_mixer_model, test_reconstructions = run_autoencoder_experiment(conv_mixer_model, data_train_noise, data_test_noise)
 
@@ -216,6 +219,6 @@ def main():
     compilation_time = time.time() - start_time
     print(f"Compilation time: {compilation_time} seconds")
 
-
+    '''
 if __name__ == '__main__':
     main()
