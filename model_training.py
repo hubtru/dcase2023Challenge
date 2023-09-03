@@ -52,6 +52,19 @@ def normalize_features(features_data, model):
     return normalized_data
 
 
+def normalize_datasets_to_01(dataset1, dataset2, dataset3):
+    # Calculate the minimum and maximum values across all three datasets
+    min_val = min(np.min(dataset1), np.min(dataset2), np.min(dataset3))
+    max_val = max(np.max(dataset1), np.max(dataset2), np.max(dataset3))
+
+    # Normalize each dataset using the calculated min and max values
+    normalized_dataset1 = (dataset1 - min_val) / (max_val - min_val)
+    normalized_dataset2 = (dataset2 - min_val) / (max_val - min_val)
+    normalized_dataset3 = (dataset3 - min_val) / (max_val - min_val)
+
+    return normalized_dataset1, normalized_dataset2, normalized_dataset3
+
+
 def shuffle_data_and_labels(data, labels=None, random_state=None):
     if labels is not None:
         shuffled_data, shuffled_labels = shuffle(data, labels, random_state=random_state)

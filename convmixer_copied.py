@@ -4,20 +4,20 @@ import os
 from tensorflow import keras
 from keras import layers
 import matplotlib.pyplot as plt
-import tensorflow_addons as tfa
+# import tensorflow_addons as tfa
 import tensorflow as tf
 import numpy as np
 
-from model_training import normalize_features, shuffle_data_and_labels
+from model_training import normalize_features, shuffle_data_and_labels, normalize_datasets_to_01
 from preprocessing import compute_features, create_dataframe_from_filenames
 from settings import start_model
 
 learning_rate = 0.001
 weight_decay = 0.0001
-batch_size = 128
+batch_size = 8
 num_epochs = 10
 filters = 256
-depth = 8
+depth = 3
 kernel_size = 10
 patch_size = 8
 num_classes = 2
@@ -53,17 +53,16 @@ train_real_classification = create_dataframe_from_filenames(train_filenames)
 test_real_classification = create_dataframe_from_filenames(test_filenames)
 val_real_classification = create_dataframe_from_filenames(val_filenames)
 print(data_train[0])
+'''
 data_train = normalize_features(data_train, model)
 data_test = normalize_features(data_test, model)
 data_val = normalize_features(data_val, model)
-
+'''
+data_train, data_test, data_val = normalize_datasets_to_01(data_train, data_test, data_val)
 data_train, train_real_classification = shuffle_data_and_labels(data_train, train_real_classification)
 data_test, test_real_classification = shuffle_data_and_labels(data_test, test_real_classification)
 data_val, val_real_classification = shuffle_data_and_labels(data_val, val_real_classification)
 # data_val, val_real_classification = shuffle_data_and_labels(data_val, val_real_classification, 42)
-print(train_real_classification["anomaly"])
-print(test_real_classification["anomaly"])
-print(val_real_classification["anomaly"])
 
 data_train = data_train[:, :, :, np.newaxis]  # (x, 256, 256, 1)
 data_test = data_test[:, :, :, np.newaxis]
@@ -121,16 +120,15 @@ def conv_mixer_block(x, filters: int, kernel_size: int):
 
 
 def get_conv_mixer_256_8(
-    image_size=32, filters=256, depth=8, kernel_size=8, patch_size=5, num_classes=1
-):
+    image_size=32, filters=256, depth=8, kernel_size=8, patch_size=5, num_classes=10):
     """ConvMixer-256/8: https://openreview.net/pdf?id=TVHS5Y4dNvM.
     The hyperparameter values are taken from the paper.
     """
     inputs = keras.Input((image_size, image_size, 1))
-    x = layers.Rescaling(scale=1.0 / 255)(inputs)
+    # x = layers.Rescaling(scale=1.0 / 255)(inputs)
 
     # Extract patch embeddings.
-    x = conv_stem(x, filters, patch_size)
+    x = conv_stem(inputs, filters, patch_size)
 
     # ConvMixer blocks.
     for _ in range(depth):
@@ -144,7 +142,7 @@ def get_conv_mixer_256_8(
 
 
 def run_experiment(model):
-    optimizer = tfa.optimizers.AdamW(
+    optimizer = tf.keras.optimizers.Adam(
         learning_rate=learning_rate, weight_decay=weight_decay
     )
 
@@ -168,7 +166,7 @@ def run_experiment(model):
         epochs=num_epochs,
         callbacks=[checkpoint_callback],
     )
-
+    '''
     model.load_weights(checkpoint_filepath)
     _, accuracy = model.evaluate(train_dataset)
     print(f"Train accuracy: {round(accuracy * 100, 2)}%")
@@ -176,6 +174,7 @@ def run_experiment(model):
     print(f"Test accuracy: {round(accuracy * 100, 2)}%")
     _, accuracy = model.evaluate(val_dataset)
     print(f"Val accuracy: {round(accuracy * 100, 2)}%")
+    '''
     return history, model
 
 
