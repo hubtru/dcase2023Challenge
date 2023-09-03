@@ -25,16 +25,19 @@ def compute_features(audio_dir, feature_type, augment=False, num_augmentations=5
             filepath = os.path.join(audio_dir, filename)
             segments, sr = librosa.load(filepath, sr=None)
 
-            # Extract features for the segment
-            feature = extract_features(audio=segments, sr=sr, feature_type=feature_type,
-                                       output_size=output_size)
+            # Split audio into 3-second segments with specified dimensions
+            audio_segments = audio_to_segments(segments, sr)
 
-            # Append the features, classification, and filename for the segment
-            features = np.append(features, [feature], axis=0)
+            for audio_segment in audio_segments:
+                # Extract features for the segment
+                feature = extract_features(audio=audio_segment, sr=sr, feature_type=feature_type,
+                                           output_size=output_size)
+                # Append the features, classification, and filename for the segment
+                features = np.append(features, [feature], axis=0)
 
-            classification = 1 if "anomaly" in filename else 0
-            classifications = np.append(classifications, classification)
-            filenames = np.append(filenames, filename)
+                classification = 1 if "anomaly" in filename else 0
+                classifications = np.append(classifications, classification)
+                filenames = np.append(filenames, filename)
     return features, classifications, filenames
 
 
@@ -113,7 +116,7 @@ def audio_to_segments(audio, sr, sample_duration=3, overlap_duration=1):
     num_samples = len(audio)
 
     # Calculate the number of segments
-    num_segments = (num_samples - sample_length) // (sample_length - overlap_length) + 1
+    num_segments = (num_samples - sample_length) // (sample_length - overlap_length)  # + 1
 
     # Initialize a list to store the segmented audio samples
     audio_segments = []
@@ -128,10 +131,11 @@ def audio_to_segments(audio, sr, sample_duration=3, overlap_duration=1):
         start += sample_length - overlap_length
 
     # Pad the last segment with zeros if needed
+    '''
     if len(audio_segments[-1]) < sample_length:
         padding = sample_length - len(audio_segments[-1])
         audio_segments[-1] = np.concatenate((audio_segments[-1], np.zeros(padding)))
-
+    '''
     return audio_segments
 
 

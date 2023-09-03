@@ -37,7 +37,7 @@ def start_model():
 
     model = model_options[3]
     feature = feature_options[1]
-    output_size = (256, 256)
+    output_size = (96, 96)
     model_name = f'saved_models/{model}_train_data_{feature}_epochs10_l2reg{l2reg}'
     checkpoint_path = f'checkpoints/best_model_{model}_newDense_{feature}_epochs{epochs}_l2reg{l2reg}_onlytrain.h5'
 

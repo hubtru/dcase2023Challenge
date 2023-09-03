@@ -1,17 +1,29 @@
 # from tensorflow.keras import layers
+import os
+
 from tensorflow import keras
 from keras import layers
-
 import matplotlib.pyplot as plt
 import tensorflow_addons as tfa
 import tensorflow as tf
 import numpy as np
 
+from model_training import normalize_features, shuffle_data_and_labels
+from preprocessing import compute_features, create_dataframe_from_filenames
+from settings import start_model
+
 learning_rate = 0.001
 weight_decay = 0.0001
 batch_size = 128
-num_epochs = 1
+num_epochs = 10
+filters = 256
+depth = 8
+kernel_size = 10
+patch_size = 8
+num_classes = 2
+image_size = 96
 
+'''
 (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
 val_split = 0.1
 
@@ -19,11 +31,43 @@ val_indices = int(len(x_train) * val_split)
 new_x_train, new_y_train = x_train[val_indices:], y_train[val_indices:]
 x_val, y_val = x_train[:val_indices], y_train[:val_indices]
 
+
 print(f"Training data samples: {len(new_x_train)}")
 print(f"Validation data samples: {len(x_val)}")
 print(f"Test data samples: {len(x_test)}")
+'''
+model = "ConvMixer"
+audio_all, datasets, output_size, feature = start_model()
 
-image_size = 32
+train_path = os.path.join(audio_all, datasets[0], "train")
+test_path = os.path.join(audio_all, datasets[0], "test")
+val_path = os.path.join(audio_all, datasets[0], "val")
+data_train, train_real_classification, train_filenames = compute_features(train_path, feature_type=feature,
+                                                                         output_size=output_size)
+data_test, test_real_classification, test_filenames = compute_features(test_path, feature_type=feature,
+                                                                         output_size=output_size)
+data_val, val_real_classification, val_filenames = compute_features(val_path, feature_type=feature,
+                                                                         output_size=output_size)
+
+train_real_classification = create_dataframe_from_filenames(train_filenames)
+test_real_classification = create_dataframe_from_filenames(test_filenames)
+val_real_classification = create_dataframe_from_filenames(val_filenames)
+print(data_train[0])
+data_train = normalize_features(data_train, model)
+data_test = normalize_features(data_test, model)
+data_val = normalize_features(data_val, model)
+
+data_train, train_real_classification = shuffle_data_and_labels(data_train, train_real_classification)
+data_test, test_real_classification = shuffle_data_and_labels(data_test, test_real_classification)
+data_val, val_real_classification = shuffle_data_and_labels(data_val, val_real_classification)
+# data_val, val_real_classification = shuffle_data_and_labels(data_val, val_real_classification, 42)
+print(train_real_classification["anomaly"])
+print(test_real_classification["anomaly"])
+print(val_real_classification["anomaly"])
+
+data_train = data_train[:, :, :, np.newaxis]  # (x, 256, 256, 1)
+data_test = data_test[:, :, :, np.newaxis]
+data_val = data_val[:, :, :, np.newaxis]
 auto = tf.data.AUTOTUNE
 
 data_augmentation = keras.Sequential(
@@ -44,9 +88,13 @@ def make_datasets(images, labels, is_train=False):
     return dataset.prefetch(auto)
 
 
-train_dataset = make_datasets(new_x_train, new_y_train, is_train=True)
-val_dataset = make_datasets(x_val, y_val)
-test_dataset = make_datasets(x_test, y_test)
+train_dataset = make_datasets(data_train, tf.convert_to_tensor(train_real_classification["anomaly"]), is_train=True)
+test_dataset = make_datasets(data_test, tf.convert_to_tensor(test_real_classification["anomaly"]))
+val_dataset = make_datasets(data_val, tf.convert_to_tensor(val_real_classification["anomaly"]))
+
+# train_dataset = make_datasets(new_x_train, new_y_train, is_train=True)
+# val_dataset = make_datasets(x_val, y_val)
+# test_dataset = make_datasets(x_test, y_test)
 
 
 def activation_block(x):
@@ -73,12 +121,12 @@ def conv_mixer_block(x, filters: int, kernel_size: int):
 
 
 def get_conv_mixer_256_8(
-    image_size=32, filters=256, depth=8, kernel_size=5, patch_size=2, num_classes=10
+    image_size=32, filters=256, depth=8, kernel_size=8, patch_size=5, num_classes=1
 ):
     """ConvMixer-256/8: https://openreview.net/pdf?id=TVHS5Y4dNvM.
     The hyperparameter values are taken from the paper.
     """
-    inputs = keras.Input((image_size, image_size, 3))
+    inputs = keras.Input((image_size, image_size, 1))
     x = layers.Rescaling(scale=1.0 / 255)(inputs)
 
     # Extract patch embeddings.
@@ -102,7 +150,7 @@ def run_experiment(model):
 
     model.compile(
         optimizer=optimizer,
-        loss="sparse_categorical_crossentropy",
+        loss="sparse_categorical_crossentropy",  # binary
         metrics=["accuracy"],
     )
 
@@ -122,14 +170,58 @@ def run_experiment(model):
     )
 
     model.load_weights(checkpoint_filepath)
+    _, accuracy = model.evaluate(train_dataset)
+    print(f"Train accuracy: {round(accuracy * 100, 2)}%")
     _, accuracy = model.evaluate(test_dataset)
     print(f"Test accuracy: {round(accuracy * 100, 2)}%")
-
+    _, accuracy = model.evaluate(val_dataset)
+    print(f"Val accuracy: {round(accuracy * 100, 2)}%")
     return history, model
 
 
-conv_mixer_model = get_conv_mixer_256_8()
+def save_experiment_results(filters, depth, kernel_size, patch_size, num_classes, model):
+    # Define the file name based on your settings
+    # Define the directory path
+    directory = "experiments/convmixer"
+    # Create the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)
+
+    file_name = f"ConvMixer_img{image_size}_depth{depth}_kernel{kernel_size}_patches{patch_size}.txt"
+    # Define the file path
+    file_path = os.path.join(directory, file_name)
+
+    # Open the file for writing
+    with open(file_path, 'w') as file:
+        # Save history
+        file.write("History:\n")
+        file.write(str(history.history) + "\n")
+
+        # Save accuracies
+        _, accuracy = model.evaluate(train_dataset)
+        file.write("Train accuracy: {:.2f}%\n".format(round(accuracy * 100, 2)))
+        _, accuracy = model.evaluate(test_dataset)
+        file.write("Test accuracy: {:.2f}%\n".format(round(accuracy * 100, 2)))
+        _, accuracy = model.evaluate(val_dataset)
+        file.write("Val accuracy: {:.2f}%\n".format(round(accuracy * 100, 2)))
+
+        # Save settings
+        file.write("Settings:\n")
+        file.write(f"image_size: {image_size}\n")
+        file.write(f"filters: {filters}\n")
+        file.write(f"depth: {depth}\n")
+        file.write(f"kernel_size: {kernel_size}\n")
+        file.write(f"patch_size: {patch_size}\n")
+        file.write(f"num_classes: {num_classes}\n")
+
+    return file_path
+
+
+
+conv_mixer_model = get_conv_mixer_256_8(image_size=image_size, filters=filters, depth=depth, kernel_size=kernel_size,
+                                        patch_size=patch_size, num_classes=num_classes)
 history, conv_mixer_model = run_experiment(conv_mixer_model)
+save_experiment_results(filters=filters, depth=depth, kernel_size=kernel_size,
+                                        patch_size=patch_size, num_classes=num_classes, model=conv_mixer_model)
 
 
 def visualization_plot(weights, idx=1):
