@@ -7,6 +7,7 @@ import os
 from matplotlib.widgets import Button
 import sounddevice as sd
 import random
+import pickle
 import seaborn as sns
 from bokeh.models import HoverTool, ColumnDataSource
 from bokeh.plotting import figure, show
@@ -241,4 +242,31 @@ def visualize_audio_files(file_paths):
         axes[row_idx, 4].set_xlim(0, sr / 2)  # Show only positive frequencies
         '''
     plt.subplots_adjust(hspace=0.6)  # Adjust the vertical spacing between subplots
+    plt.show()
+
+
+def plot_training_history(history, save_path=None):
+    # Plot training & validation accuracy values
+    plt.figure(figsize=(10, 5))
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
+    plt.title('Model accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend(['Train', 'Validation'], loc='upper left')
+
+    # Plot training & validation loss values
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend(['Train', 'Validation'], loc='upper left')
+
+    if save_path:
+        plt.savefig(save_path)
+
+    # Show the plots
     plt.show()

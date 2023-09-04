@@ -11,17 +11,19 @@ import numpy as np
 from model_training import normalize_features, shuffle_data_and_labels, normalize_datasets_to_01
 from preprocessing import compute_features, create_dataframe_from_filenames
 from settings import start_model
+from visualization import plot_training_history
 
 learning_rate = 0.001
 weight_decay = 0.0001
 batch_size = 8
-num_epochs = 10
+num_epochs = 100
 filters = 256
 depth = 3
 kernel_size = 10
 patch_size = 8
 num_classes = 2
 image_size = 96
+directory = "experiments/convmixer/no_augmentation"
 
 '''
 (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
@@ -68,22 +70,23 @@ data_train = data_train[:, :, :, np.newaxis]  # (x, 256, 256, 1)
 data_test = data_test[:, :, :, np.newaxis]
 data_val = data_val[:, :, :, np.newaxis]
 auto = tf.data.AUTOTUNE
-
+'''
 data_augmentation = keras.Sequential(
     [layers.RandomCrop(image_size, image_size), layers.RandomFlip("horizontal"),],
     name="data_augmentation",
 )
-
+'''
 
 def make_datasets(images, labels, is_train=False):
     dataset = tf.data.Dataset.from_tensor_slices((images, labels))
     if is_train:
         dataset = dataset.shuffle(batch_size * 10)
     dataset = dataset.batch(batch_size)
-    if is_train:
+    '''if is_train:
         dataset = dataset.map(
             lambda x, y: (data_augmentation(x), y), num_parallel_calls=auto
         )
+    '''
     return dataset.prefetch(auto)
 
 
@@ -181,7 +184,7 @@ def run_experiment(model):
 def save_experiment_results(filters, depth, kernel_size, patch_size, num_classes, model):
     # Define the file name based on your settings
     # Define the directory path
-    directory = "experiments/convmixer"
+
     # Create the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
@@ -221,6 +224,8 @@ conv_mixer_model = get_conv_mixer_256_8(image_size=image_size, filters=filters, 
 history, conv_mixer_model = run_experiment(conv_mixer_model)
 save_experiment_results(filters=filters, depth=depth, kernel_size=kernel_size,
                                         patch_size=patch_size, num_classes=num_classes, model=conv_mixer_model)
+
+plot_training_history(history, directory)
 
 
 def visualization_plot(weights, idx=1):
