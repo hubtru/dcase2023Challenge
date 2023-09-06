@@ -77,6 +77,7 @@ data_augmentation = keras.Sequential(
 )
 '''
 
+
 def make_datasets(images, labels, is_train=False):
     dataset = tf.data.Dataset.from_tensor_slices((images, labels))
     if is_train:

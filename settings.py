@@ -18,7 +18,9 @@ pd.set_option('display.max_columns', None)
 
 def start_model():
     start_time = time.time()
-    audio_all = r'C:\Users\HABELS.COMPUTACENTER\Downloads\dcase_training_data'
+    project_folder = os.path.abspath(os.path.dirname(__file__))  # Get the absolute path of your Python script
+    audio_all = os.path.join(project_folder, 'data', 'dcase2023t2', 'dev_data', 'raw')  # Create a path to the 'data' folder within your project
+    # audio_all = r'C:\Users\HABELS.COMPUTACENTER\Downloads\dcase_training_data'
     # datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve']
     # datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve', 'bandsaw', 'grinder',
     #  'shaker', 'ToyDrone', 'ToyNscale', 'ToyTank', 'Vacuum']
