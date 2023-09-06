@@ -23,7 +23,7 @@ def start_model():
     # datasets = ['bearing', 'fan', 'gearbox', 'slider', 'ToyCar', 'ToyTrain', 'valve', 'bandsaw', 'grinder',
     #  'shaker', 'ToyDrone', 'ToyNscale', 'ToyTank', 'Vacuum']
     # datasets = ['fan', 'gearbox']
-    datasets = ['Trial2']
+    datasets = ['Trial2_bearing']
     # datasets = ['bandsaw', 'grinder', 'shaker', 'ToyDrone', 'ToyNscale', 'ToyTank', 'Vacuum']
     # datasets = ['bandsaw']
     feature_options = ["mfcc", "mel", "stft", "fft"]
@@ -50,7 +50,7 @@ def start_model():
 def main():
     '''
 
-    if (datasets[0] == "Trial" or datasets[0] == "Trial2"):
+    if (datasets[0] == "Trial" or datasets[0] == "Trial2_bearing"):
         train_path = os.path.join(audio_all, datasets[0], "train")
         test_path = os.path.join(audio_all, datasets[0], "test")
         val_path = os.path.join(audio_all, datasets[0], "val")

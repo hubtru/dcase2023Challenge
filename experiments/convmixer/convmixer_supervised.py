@@ -111,7 +111,7 @@ def run_autoencoder_experiment(autoencoder, train_noisy_data, test_noisy_data):
         loss="mean_squared_error",  # Use mean squared error as the reconstruction loss
     )
 
-    checkpoint_filepath = "checkpoint_convmixer/best_model_convmixer.h5"
+    checkpoint_filepath = "../../checkpoint_convmixer/best_model_convmixer.h5"
     checkpoint_callback = keras.callbacks.ModelCheckpoint(
         checkpoint_filepath,
         monitor="loss",  # Save based on training loss (reconstruction error)
