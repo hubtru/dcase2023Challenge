@@ -19,8 +19,8 @@ batch_size = 8
 num_epochs = 100
 filters = 256
 depth = 3
-kernel_size = 10
-patch_size = 8
+kernel_size = 15
+patch_size = 5
 num_classes = 2
 image_size = 96
 directory = "experiments/convmixer/no_augmentation"
@@ -129,10 +129,10 @@ def get_conv_mixer_256_8(
     The hyperparameter values are taken from the paper.
     """
     inputs = keras.Input((image_size, image_size, 1))
-    # x = layers.Rescaling(scale=1.0 / 255)(inputs)
+    x = layers.Rescaling(scale=1.0 / 255)(inputs)
 
     # Extract patch embeddings.
-    x = conv_stem(inputs, filters, patch_size)
+    x = conv_stem(x, filters, patch_size)
 
     # ConvMixer blocks.
     for _ in range(depth):
@@ -219,14 +219,13 @@ def save_experiment_results(filters, depth, kernel_size, patch_size, num_classes
     return file_path
 
 
-
 conv_mixer_model = get_conv_mixer_256_8(image_size=image_size, filters=filters, depth=depth, kernel_size=kernel_size,
                                         patch_size=patch_size, num_classes=num_classes)
 history, conv_mixer_model = run_experiment(conv_mixer_model)
 save_experiment_results(filters=filters, depth=depth, kernel_size=kernel_size,
                                         patch_size=patch_size, num_classes=num_classes, model=conv_mixer_model)
 
-plot_training_history(history, directory)
+plot_training_history(history, directory, f"ConvMixer_img{image_size}_depth{depth}_kernel{kernel_size}_patches{patch_size}.png")
 
 
 def visualization_plot(weights, idx=1):
@@ -250,6 +249,7 @@ def visualization_plot(weights, idx=1):
         idx += 1
 
 
+'''
 # We first visualize the learned patch embeddings.
 patch_embeddings = conv_mixer_model.layers[2].get_weights()[0]
 visualization_plot(patch_embeddings)
@@ -266,3 +266,4 @@ idx = 26  # Taking a kernel from the middle of the network.
 kernel = conv_mixer_model.layers[idx].get_weights()[0]
 kernel = np.expand_dims(kernel.squeeze(), axis=2)
 visualization_plot(kernel)
+'''
