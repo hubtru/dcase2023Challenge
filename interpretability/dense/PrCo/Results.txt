@@ -1,0 +1,35 @@
+Results with base model (developement dataset, Epochs=10, l2reg=0.002) 
+and fine tune for each specific machine type (Epochs=10, l2reg=0.002)
+bearing		AUC: 0.535 F1: 0.321 Precision: 0.595 Recall: 0.22
+fan: 		AUC: 0.495 F1: 0.322 Precision: 0.490 Recall: 0.24
+gearbox:	AUC: 0.525 F1: 0.264 Precision: 0.586 Recall: 0.17
+slider:		AUC: 0.510 F1: 0.279 Precision: 0.528 Recall: 0.190
+ToyCar:		AUC: 0.555 F1: 0.341 Precision: 0.657 Recall: 0.230
+ToyTrain:	AUC: 0.525 F1: 0.342 Precision: 0.543 Recall: 0.250
+valve:		AUC: 0.400 F1: 0.200 Precision: 0.300 Recall: 0.150
+
+... with gaussion noise (0.1)
+bearing		AUC: 0.495 F1: 0.436 Precision: 0.494 Recall: 0.390
+fan: 		AUC: 0.490 F1: 0.485 Precision: 0.490 Recall: 0.480
+gearbox: 	AUC: 0.490 F1: 0.362 Precision: 0.483 Recall: 0.290
+slider:		AUC: 0.515 F1: 0.374 Precision: 0.527 Recall: 0.290
+ToyCar:		AUC: 0.575 F1: 0.509 Precision: 0.603 Recall: 0.440
+
+Results with convolutional model (developement dataset, Epochs=10, l2reg=0.002) 
+and fine tune for each specific machine type (Epochs=5, l2reg=0.002)
+bearing:	AUC: 0.540 F1: 0.403 Precision: 0.574 Recall: 0.310
+fan:		AUC: 0.515 F1: 0.374 Precision: 0.527 Recall: 0.290
+gearbox:	AUC: 0.525 F1: 0.264 Precision: 0.586 Recall: 0.170
+slider:		AUC: 0.490 F1: 0.227 Precision: 0.469 Recall: 0.150
+ToyCar:		AUC: 0.540 F1: 0.452 Precision: 0.559 Recall: 0.380
+ToyTrain:	AUC: 0.520 F1: 0.314 Precision: 0.550 Recall: 0.220
+valve:		AUC: 0.390 F1: 0.228 Precision: 0.310 Recall: 0.180
+
+Baseline Mahalanobis:
+bearing:	AUC: 59.20 % PAUC: 49.18 %	
+fan:		AUC: 48.73 % PAUC: 48.05 %
+gearbox:	AUC: 59.77 % PAUC: 50.68 %
+slider:		AUC: 61.89 % PAUC: 58.42 %
+ToyCar:		AUC: 71.58 % PAUC: 54.84 %
+ToyTrain:	AUC: 79.25 % PAUC: 56.18 %
+valve:		AUC: 53.74 % PAUC: 51.28 %
