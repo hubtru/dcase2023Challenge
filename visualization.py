@@ -264,11 +264,9 @@ def plot_training_history(history, save_path=None, file_name=None):
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend(['Train', 'Validation'], loc='upper left')
-    if save_path and file_name:
-        save_file_path = os.path.join(save_path, file_name)
-        plt.savefig(save_file_path)
-    elif save_path:
-        plt.savefig(save_path)
+
+    save_file_path = os.path.join(save_path, file_name)
+    plt.savefig(save_file_path)
 
     # Show the plots
     # plt.show()
